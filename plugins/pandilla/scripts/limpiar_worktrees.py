@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Limpia los worktrees que ya cumplieron: su PR está mergeado o cerrado (o, en repos sin PR, su rama ya está en la
 base), no tienen cambios ni commits que solo existan ahí, nadie está corriendo adentro y nadie los tocó hace rato.
+También borra los que no tienen cambios ni commits propios (todo su contenido ya está en el remoto o en la base) y
+llevan --dias-sin-uso días sin tocarse (3 por defecto), aunque no tengan PR.
 
 Solo borra la carpeta del worktree (`git worktree remove`, sin --force): la rama y sus commits quedan en el repo.
 Lo que no cumple todo queda en el informe con su motivo, para que lo decida una persona.
@@ -68,7 +70,18 @@ def is_ancestor(repo, commit, of):
                           capture_output=True).returncode == 0
 
 
-def review(repo, base, max_idle_hours, busy):
+def unique_commits(repo, path, head, base):
+    """Commits del worktree que no están en ningún remoto ni en la base (None si no se puede saber)."""
+    if not head:
+        return None
+    args = ["git", "-C", path, "rev-list", "--count", head, "--not", "--remotes"]
+    if base and run(["git", "-C", repo, "rev-parse", "--verify", base]):
+        args.append(base)
+    out = run(args)
+    return int(out) if out is not None else None
+
+
+def review(repo, base, max_idle_hours, busy, stale_days=3.0):
     prs = pull_requests(repo)
     rows = []
     for wt in worktrees(repo):
@@ -89,7 +102,14 @@ def review(repo, base, max_idle_hours, busy):
         merged_locally = bool(base and head and run(["git", "-C", repo, "rev-parse", "--verify", base])
                               and is_ancestor(repo, head, base))
         covered = any(head and (head == p["headRefOid"] or is_ancestor(repo, head, p["headRefOid"])) for p in closed)
+        unique = unique_commits(repo, path, head, base)
+        stale = (not open_prs and not dirty and unique == 0 and idle_h >= stale_days * 24
+                 and not any(p == path or p.startswith(path + os.sep) for p in busy))
         reasons = []
+        if stale and not closed and not merged_locally:
+            row.update(verdict="borrar", reason=f"sin cambios ni commits propios, {idle_h / 24:.0f} días sin uso")
+            rows.append(row)
+            continue
         if open_prs:
             reasons.append("PR abierto")
         elif not closed and not merged_locally:
@@ -125,6 +145,8 @@ def main():
     parser.add_argument("--repo", action="append")
     parser.add_argument("--base", help="rama base para repos sin PR (por defecto: la del remoto, o main)")
     parser.add_argument("--horas", type=float, default=1.0, help="horas sin tocar antes de poder borrar")
+    parser.add_argument("--dias-sin-uso", type=float, default=3.0,
+                        help="días sin tocar para borrar un worktree sin cambios ni commits propios, aunque no tenga PR")
     parser.add_argument("--aplicar", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
@@ -138,7 +160,7 @@ def main():
         if not base:
             remote_head = run(["git", "-C", repo, "symbolic-ref", "--short", "refs/remotes/origin/HEAD"])
             base = remote_head.split("/", 1)[1] if remote_head else "main"
-        rows += review(repo, base, args.horas, busy)
+        rows += review(repo, base, args.horas, busy, args.dias_sin_uso)
 
     freed = 0.0
     for row in rows:

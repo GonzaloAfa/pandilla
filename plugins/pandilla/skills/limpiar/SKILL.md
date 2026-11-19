@@ -20,6 +20,8 @@ Borra un worktree **solo** si cumple todo esto:
 - ningún proceso tiene su directorio actual adentro (dev5, servidores, sesiones);
 - nadie lo tocó en la última hora (`--horas` lo cambia).
 
+También borra, aunque no tenga PR, el worktree que no tiene cambios ni commits propios (todo su contenido ya está en el remoto o en la base) y lleva 3 días sin tocarse (`--dias-sin-uso` lo cambia): restos de T3, worktrees de regresión, ramas temporales ya subidas.
+
 Borra solo la carpeta, con `git worktree remove` y sin `--force`. La rama y sus commits quedan en el repo. Lo que no cumple todo va al informe con su motivo: eso lo decide una persona, nunca el script.
 
 ## Pasos
