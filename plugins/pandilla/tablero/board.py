@@ -310,6 +310,26 @@ def snapshot(hours):
             "free_rooms": free_rooms, "hallway": hallway, "milestones": milestones}
 
 
+CORS_ORIGINS = set(filter(None, os.environ.get(
+    "PANDILLA_CORS", "http://127.0.0.1:7790,http://localhost:7790").split(",")))
+
+
+def salas(hours):
+    """Por rama: pedido, paso y qué hace ahora. Lo consume la oficina de Pixel Agents para sus pizarras."""
+    data = snapshot(hours)
+    rooms = [r for l in data["lotes"] for r in l["rooms"] + l["extra"] + l["done"]] + data["free_rooms"]
+    out, seen = [], set()
+    for r in rooms + [dict(h, title=h.get("title")) for h in data["hallway"]]:
+        branch = r.get("branch")
+        if not branch or branch in seen:
+            continue
+        seen.add(branch)
+        out.append({"branch": branch, "short": branch.split("/")[-1], "repo": r.get("repo"), "id": r.get("id"),
+                    "title": r.get("title"), "phase": r.get("phase"), "now": r.get("now"),
+                    "status": r.get("status"), "verdict": r.get("verdict"), "findings": r.get("findings")})
+    return {"now": data["now"], "salas": out}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
@@ -319,12 +339,18 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Cache-Control", "no-store")
+        origin = self.headers.get("Origin")
+        if origin in CORS_ORIGINS:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
 
     def do_GET(self):
-        if self.path.startswith("/api/state"):
+        if self.path.startswith("/api/salas"):
+            self.send(json.dumps(salas(12), ensure_ascii=False), "application/json")
+        elif self.path.startswith("/api/state"):
             hours = 3.0
             match = re.search(r"h=([0-9.]+)", self.path)
             if match:
