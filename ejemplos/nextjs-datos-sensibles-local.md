@@ -1,4 +1,4 @@
-# Perfil de cuadrilla: ejemplo de app Next.js con datos sensibles, todo local
+# Perfil de pandilla: ejemplo de app Next.js con datos sensibles, todo local
 
 Ejemplo ficticio: app Next.js multi-tenant con datos de salud, arquitectura hexagonal (ports y adapters), adapters en memoria para el desarrollo y Postgres por Testcontainers en los tests de integración. No se usa la CI por ahora, así que cada tarea termina en un commit local. Producción no se toca nunca.
 
@@ -17,17 +17,17 @@ Ejemplo ficticio: app Next.js multi-tenant con datos de salud, arquitectura hexa
 
 - **Preparar:**
   ```
-  bash scripts/cuadrilla/entorno.sh \
+  bash scripts/pandilla/entorno.sh \
     --instalar "pnpm install --frozen-lockfile" \
     --puerto DEV=23000 --puerto E2E_PORT=24000 --puerto E2E_DEMO_PORT=25000 \
     --var 'PORT=$DEV' --var 'APP_URL=http://localhost:$DEV' \
     --var 'PATH=$HOME/.nvm/versions/node/v24.22.1/bin:$PATH' \
     --negar mcp__Neon --negar mcp__plugin_vercel_vercel
   ```
-- **Correr:** `scripts/cuadrilla/wt <comando>`
-- **Liberar:** `bash scripts/cuadrilla/entorno.sh --borrar`
+- **Correr:** `scripts/pandilla/wt <comando>`
+- **Liberar:** `bash scripts/pandilla/entorno.sh --borrar`
 - **Del checkout principal:** puertos 3000, 3100, 3101 y 3200.
-- **En fila:** e2e (build + 2 servidores + Chromium) → `bash scripts/cuadrilla/fila.sh app-e2e -- scripts/cuadrilla/wt pnpm test:e2e`
+- **En fila:** e2e (build + 2 servidores + Chromium) → `bash scripts/pandilla/fila.sh app-e2e -- scripts/pandilla/wt pnpm test:e2e`
 
 No hay bases que copiar: el desarrollo corre con adapters en memoria, y cada corrida de integración levanta su propio Postgres. Necesita Docker.
 
@@ -64,7 +64,7 @@ No hay bases que copiar: el desarrollo corre con adapters en memoria, y cada cor
 
 **Reglas adicionales:** `seguridad` entra siempre que el diff toque acceso clínico, transacciones por tenant, sesiones, PIN o TOTP, webhooks o logs. `clinico` entra si cambia la ficha, el consentimiento, la bitácora o la retención.
 
-**Revisores propios:** `.claude/cuadrilla/revisores/arquitectura.md` y `.claude/cuadrilla/revisores/clinico.md`.
+**Revisores propios:** `.claude/pandilla/revisores/arquitectura.md` y `.claude/pandilla/revisores/clinico.md`.
 
 ## Flujos críticos
 

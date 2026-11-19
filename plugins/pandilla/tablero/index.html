@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mesa de agentes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #ffffff; --ink: #1f2430; --muted: #7a8194; --line: #e7e9f0; --soft: #f6f7fb;
+    --green: #16a34a; --amber: #d97706; --red: #dc2626; --blue: #2563eb;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; z-index: 5; }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: -.2px; }
+  header .live { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+  header .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: blink 1.6s infinite; }
+  header .stats { margin-left: auto; display: flex; gap: 18px; color: var(--muted); font-size: 12px; }
+  header .stats b { color: var(--ink); font-size: 15px; display: block; }
+  header select { border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; background: #fff; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; min-height: calc(100vh - 60px); }
+  #tables { min-width: 0; overflow: hidden; padding: 20px 24px; display: flex; flex-direction: column; gap: 22px; }
+  aside { border-left: 1px solid var(--line); background: var(--soft); padding: 16px; overflow: auto; max-height: calc(100vh - 60px); position: sticky; top: 60px; }
+  aside h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 12px; }
+  .empty { color: var(--muted); padding: 60px; text-align: center; }
+
+  .table-card { border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px 8px; box-shadow: 0 1px 2px rgba(20,30,60,.04); }
+  .table-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .table-head h3 { margin: 0; font-size: 15px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--soft); color: var(--muted); border: 1px solid var(--line); }
+  .pill.working { color: var(--green); border-color: #bbf7d0; background: #f0fdf4; }
+  .pill.ok { color: var(--green); border-color: #bbf7d0; background: #f0fdf4; font-weight: 600; }
+  .pill.bad { color: var(--red); border-color: #fecaca; background: #fef2f2; font-weight: 600; }
+  .table-head .prompt { color: var(--muted); font-size: 12px; flex-basis: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .stage { position: relative; height: 600px; margin-top: 6px; }
+  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .round { position: absolute; left: 50%; top: 50%; width: 250px; height: 250px; margin: -125px 0 0 -125px; border-radius: 50%;
+           background: radial-gradient(circle at 50% 40%, #fbfcff, #eef1f8); border: 1px solid var(--line); }
+  .seat { position: absolute; width: 0; height: 0; }
+  .avatar { position: absolute; left: -30px; top: -30px; width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center;
+            font-size: 26px; background: #fff; border: 3px solid var(--c, #94a3b8); box-shadow: 0 4px 14px rgba(20,30,60,.10); transition: transform .3s; }
+  .seat.working .avatar { animation: bob 1.8s ease-in-out infinite; }
+  .seat.working .avatar::after { content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 2px solid var(--c); opacity: .5; animation: ring 1.6s ease-out infinite; }
+  .seat.done .avatar { filter: saturate(.85); }
+  .seat.done .avatar::before { content: "✓"; position: absolute; right: -6px; bottom: -4px; width: 20px; height: 20px; border-radius: 50%; background: var(--green);
+                               color: #fff; font-size: 12px; display: grid; place-items: center; font-weight: 700; border: 2px solid #fff; }
+  .name { position: absolute; left: -70px; width: 140px; top: 36px; text-align: center; font-size: 12px; font-weight: 600; }
+  .name small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+  .chips { position: absolute; left: -70px; width: 140px; top: 68px; display: flex; gap: 4px; justify-content: center; }
+  .chip { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px; color: #fff; }
+  .chip.C { background: var(--red); } .chip.W { background: var(--amber); } .chip.S { background: var(--blue); }
+  .chip.zero { background: #e2e8f0; color: var(--muted); font-weight: 600; }
+
+  .bubble { position: absolute; width: 190px; padding: 8px 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+            font-size: 12px; box-shadow: 0 6px 18px rgba(20,30,60,.10); animation: pop .25s ease-out; z-index: 2; }
+  .bubble .who { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--c); font-weight: 700; margin-bottom: 2px; }
+  .bubble .txt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .bubble.up { bottom: 44px; left: -95px; } .bubble.down { top: 94px; left: -95px; }
+  .bubble.left { right: 44px; top: -30px; } .bubble.right { left: 44px; top: -30px; }
+  .dots { display: inline-flex; gap: 3px; margin-left: 4px; vertical-align: middle; }
+  .dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--c); animation: typing 1s infinite; }
+  .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+
+  .center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; width: 200px; }
+  .center .avatar { position: relative; left: 0; top: 0; margin: 0 auto 6px; width: 76px; height: 76px; font-size: 34px; --c: #1f2430; }
+  .center .title { font-weight: 700; font-size: 13px; }
+  .center .act { font-size: 11px; color: var(--muted); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .spark { r: 4; animation: travel 1s ease-in forwards; }
+
+  .msg { display: flex; gap: 9px; margin-bottom: 11px; animation: pop .25s ease-out; }
+  .msg .av { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 2px solid var(--c); font-size: 15px; }
+  .msg .body { background: #fff; border: 1px solid var(--line); border-radius: 4px 12px 12px 12px; padding: 7px 10px; min-width: 0; flex: 1; }
+  .msg .meta { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+  .msg .meta b { color: var(--c); }
+  .msg .t { font-size: 12px; word-break: break-word; }
+
+  @keyframes blink { 50% { opacity: .3; } }
+  @keyframes bob { 50% { transform: translateY(-4px); } }
+  @keyframes ring { from { transform: scale(.9); opacity: .6; } to { transform: scale(1.35); opacity: 0; } }
+  @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes typing { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-2px); } }
+  @keyframes dash { to { stroke-dashoffset: -24; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🪑 Mesa de agentes</h1>
+  <span class="live"><i></i> en vivo</span>
+  <div class="stats" id="stats"></div>
+  <select id="hours">
+    <option value="1">Última hora</option>
+    <option value="3" selected>Últimas 3 h</option>
+    <option value="12">Últimas 12 h</option>
+    <option value="48">2 días</option>
+  </select>
+</header>
+<main>
+  <section id="tables"><div class="empty">Esperando agentes… corre <b>/panel</b> o lanza un lote para verlos aquí.</div></section>
+  <aside><h2>Lo que se dicen</h2><div id="feed"></div></aside>
+</main>
+<script>
+const ROLES = {
+  "correctitud": ["🧠", "Correctitud", "#7c3aed"],
+  "sistemas": ["🔗", "Sistemas", "#0891b2"],
+  "seguridad": ["🛡️", "Seguridad", "#dc2626"],
+  "datos": ["🗄️", "Datos", "#0d9488"],
+  "costos": ["💰", "Costos", "#ca8a04"],
+  "infra": ["🏗️", "Infra", "#475569"],
+  "superficies": ["🎨", "Superficies", "#ea580c"],
+  "verificador": ["⚖️", "Verificador", "#1f2430"],
+  "Explore": ["🔎", "Explorador", "#2563eb"],
+  "Plan": ["🗺️", "Planificador", "#4f46e5"],
+  "general-purpose": ["🤖", "Agente", "#64748b"],
+};
+const roleKey = type => (type || "").replace(/^pandilla:/, "").replace(/^revisor-/, "");
+const role = (type, description) => {
+  const key = roleKey(type);
+  if (ROLES[key]) return ROLES[key];
+  const d = (description || "").toLowerCase();
+  for (const [word, value] of Object.entries(ROLES)) {
+    if (word.length > 5 && d.includes(word.slice(0, 6))) return value;
+  }
+  return ["🤖", key || "Agente", "#64748b"];
+};
+
+const base = p => (p || "").split("/").filter(Boolean).pop() || p;
+function humanize(activity) {
+  if (!activity) return "";
+  const m = activity.match(/^(\w+): ?(.*)$/s);
+  if (!m) return activity;
+  const [, tool, rest] = m;
+  if (tool === "Read") return `Leyendo ${base(rest)}`;
+  if (tool === "Grep") return `Buscando «${rest.slice(0, 50)}»`;
+  if (tool === "Glob") return `Explorando ${rest.slice(0, 50)}`;
+  if (tool === "Edit" || tool === "Write") return `Editando ${base(rest)}`;
+  if (tool === "Agent") return `Convocando: ${rest}`;
+  if (tool === "Skill") return `Usando la skill ${rest}`;
+  if (tool === "Bash") {
+    if (/git (show|diff)/.test(rest)) return `Revisando el diff ${rest.match(/[\w./-]+\.(ts|tsx|js)/)?.[0] ? "de " + base(rest.match(/[\w./-]+\.(ts|tsx|js)/)[0]) : ""}`;
+    return rest.length < 90 ? rest : rest.slice(0, 90) + "…";
+  }
+  return `${tool}: ${rest}`;
+}
+const ago = s => s < 60 ? `${Math.round(s)} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`;
+const fmtTokens = t => t == null ? "" : t > 1e6 ? (t / 1e6).toFixed(1) + "M tok" : Math.round(t / 1000) + "k tok";
+const esc = s => (s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const lastTools = {};
+let hours = 3;
+document.getElementById("hours").onchange = e => { hours = e.target.value; tick(); };
+
+function chipsHtml(f) {
+  if (!f) return "";
+  const parts = ["C", "W", "S"].filter(k => f[k]).map(k => `<span class="chip ${k}">${f[k]} ${k}</span>`);
+  return parts.length ? parts.join("") : `<span class="chip zero">sin hallazgos</span>`;
+}
+
+function renderTable(s, now) {
+  const agents = s.agents;
+  const working = agents.filter(a => a.status === "trabajando");
+  const verdict = [...agents].reverse().find(a => a.verdict)?.verdict;
+  const totalTokens = agents.reduce((t, a) => t + (a.tokens || 0), 0);
+  const statusPill = s.status === "trabajando" || working.length ? `<span class="pill working">● trabajando</span>` : `<span class="pill">${s.status}</span>`;
+  const verdictPill = verdict ? `<span class="pill ${verdict === "APROBADO" ? "ok" : "bad"}">${verdict === "APROBADO" ? "✅ APROBADO" : "🛠️ CAMBIOS REQUERIDOS"}</span>` : "";
+
+  const W = document.getElementById("tables").clientWidth - 40;
+  const cx = W / 2, cy = 285, rx = Math.min(W / 2 - 130, 390), ry = 175;
+  const n = Math.max(agents.length, 1);
+  let seats = "", lines = "";
+  agents.forEach((a, i) => {
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
+    const x = cx + rx * Math.cos(angle), y = cy + ry * Math.sin(angle);
+    const [emoji, label, color] = role(a.type, a.description);
+    const isWorking = a.status === "trabajando";
+    const side = Math.abs(Math.cos(angle)) > 0.6 ? (Math.cos(angle) > 0 ? "right" : "left") : (Math.sin(angle) < 0 ? "up" : "down");
+    const elapsed = ((a.end || now) - a.start);
+    const total = a.findings ? (a.findings.C || 0) + (a.findings.W || 0) + (a.findings.S || 0) : 0;
+    const summary = ["C", "W", "S"].filter(k => a.findings?.[k]).map(k => `${a.findings[k]} ${k}`).join(" · ");
+    const doneText = a.verdict ? `Veredicto: ${a.verdict}` : total ? (a.headline ? `Encontré ${summary}: ${a.headline}` : `Encontré ${summary}`) : "Revisé todo: sin hallazgos ✓";
+    const bubbleText = isWorking ? esc(humanize(a.activity)) + `<span class="dots"><i></i><i></i><i></i></span>` : esc(doneText);
+    const showBubble = isWorking || (a.end && now - a.end < 90);
+    lines += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${color}" stroke-opacity="${isWorking ? .55 : .18}" stroke-width="${isWorking ? 2 : 1.2}" stroke-dasharray="${isWorking ? "6 6" : "0"}" style="${isWorking ? "animation: dash 1s linear infinite" : ""}"/>`;
+    const key = s.id + a.id;
+    if (lastTools[key] !== undefined && a.tools > lastTools[key]) {
+      lines += `<circle cx="${x}" cy="${y}" r="5" fill="${color}"><animate attributeName="cx" from="${x}" to="${cx}" dur="0.9s" fill="freeze"/><animate attributeName="cy" from="${y}" to="${cy}" dur="0.9s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.9s" fill="freeze"/></circle>`;
+    }
+    lastTools[key] = a.tools;
+    seats += `<div class="seat ${isWorking ? "working" : "done"}" style="left:${x}px;top:${y}px;--c:${color}">
+      <div class="avatar" title="${esc(a.description || a.type)}">${emoji}</div>
+      <div class="name">${label}<small>${ago(elapsed)} · ${a.tools} acciones ${a.tokens ? "· " + fmtTokens(a.tokens) : ""}</small></div>
+      <div class="chips">${a.verdict ? "" : chipsHtml(a.findings)}</div>
+      ${showBubble ? `<div class="bubble ${side}" style="--c:${color}"><div class="who">${label}</div><div class="txt">${bubbleText}</div></div>` : ""}
+    </div>`;
+  });
+  const centerAct = s.status === "trabajando" ? humanize(s.activity) : (working.length ? `${working.length} agentes trabajando` : "esperando");
+  return `<div class="table-card">
+    <div class="table-head"><h3>📁 ${esc(s.label)}</h3>${s.branch ? `<span class="pill">⎇ ${esc(s.branch)}</span>` : ""}${statusPill}${verdictPill}
+      <span class="pill">${agents.length} agentes${totalTokens ? " · " + fmtTokens(totalTokens) : ""}</span>
+      ${s.prompt ? `<div class="prompt">💬 ${esc(s.prompt)}</div>` : ""}</div>
+    <div class="stage" style="${agents.length ? "" : "height:220px"}">
+      ${agents.length ? `<div class="round"></div>` : ""}
+      <svg>${lines}</svg>
+      <div class="center" style="${agents.length ? "" : "top:110px"}"><div class="avatar">🧑‍✈️</div><div class="title">Orquestador</div><div class="act">${esc(centerAct)}</div></div>
+      ${seats}
+    </div></div>`;
+}
+
+function renderFeed(feed) {
+  return feed.map(e => {
+    let emoji = "🧑‍✈️", label = "Orquestador", color = "#1f2430", text = "";
+    if (e.agent_type) [emoji, label, color] = role(e.agent_type);
+    if (e.event === "UserPromptSubmit") { emoji = "🙋"; label = "Tú"; color = "#2563eb"; text = e.prompt; }
+    else if (e.event === "SubagentStart") text = "se sienta a la mesa";
+    else if (e.event === "SubagentStop") text = e.verdict ? `veredicto: ${e.verdict}` : e.headline ? `encontró: ${e.headline}` : "terminó su revisión, sin hallazgos";
+    else if (e.event === "Stop") text = "terminó el turno";
+    else if (e.event === "PostToolUseFailure") text = `⚠️ falló ${e.tool}`;
+    else text = humanize(`${e.tool}: ${e.summary || ""}`);
+    const t = new Date(e.ts * 1000).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    return `<div class="msg" style="--c:${color}"><div class="av">${emoji}</div><div class="body"><div class="meta"><b>${label}</b><span>${esc(e.label || "")} · ${t}</span></div><div class="t">${esc(text)}</div></div></div>`;
+  }).join("");
+}
+
+async function tick() {
+  try {
+    const r = await fetch(`/api/state?h=${hours}`);
+    const data = await r.json();
+    const all = data.sessions.flatMap(s => s.agents);
+    const active = all.filter(a => a.status === "trabajando").length;
+    const tokens = all.reduce((t, a) => t + (a.tokens || 0), 0);
+    const f = all.reduce((acc, a) => { for (const k of ["C", "W", "S"]) acc[k] += (a.findings?.[k] || 0); return acc; }, { C: 0, W: 0, S: 0 });
+    document.getElementById("stats").innerHTML =
+      `<span><b>${data.sessions.length}</b>sesiones</span><span><b>${active}</b>agentes activos</span><span><b>${all.length}</b>agentes</span>` +
+      `<span><b>${f.C} · ${f.W} · ${f.S}</b>hallazgos C · W · S</span><span><b>${fmtTokens(tokens) || "0"}</b>de subagentes</span>`;
+    document.getElementById("tables").innerHTML = data.sessions.length
+      ? data.sessions.map(s => renderTable(s, data.now)).join("")
+      : `<div class="empty">Esperando agentes… corre <b>/panel</b> o lanza un lote para verlos aquí.</div>`;
+    document.getElementById("feed").innerHTML = renderFeed(data.feed);
+  } catch (err) { /* el servidor puede estar reiniciando */ }
+}
+tick();
+setInterval(tick, 1200);
+</script>
+</body>
+</html>

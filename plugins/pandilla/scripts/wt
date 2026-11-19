@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Corre un comando con el entorno del worktree (.wt-env, lo escribe entorno.sh).
+set -euo pipefail
+raiz="$(git rev-parse --show-toplevel)"
+[ -f "$raiz/.wt-env" ] || { echo "Falta .wt-env: prepara el worktree (ver .claude/pandilla.md, sección Entorno)" >&2; exit 1; }
+source "$raiz/.wt-env"
+exec "$@"

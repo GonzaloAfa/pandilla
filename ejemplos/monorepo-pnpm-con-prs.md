@@ -1,4 +1,4 @@
-# Perfil de cuadrilla: ejemplo de monorepo pnpm con PRs
+# Perfil de pandilla: ejemplo de monorepo pnpm con PRs
 
 Ejemplo ficticio: monorepo pnpm con API en Node, app móvil Expo, landing estática y Postgres local en Docker. Cada tarea abre un PR; producción se mide solo en lectura.
 
@@ -16,9 +16,9 @@ Ejemplo ficticio: monorepo pnpm con API en Node, app móvil Expo, landing estát
 
 ## Entorno
 
-- **Preparar:** `bash scripts/cuadrilla/entorno-db.sh`, un script propio sobre `entorno.sh`. Además de los puertos, copia la base de desarrollo `app` a `app_wt_<rama>` y crea una base de test propia:
+- **Preparar:** `bash scripts/pandilla/entorno-db.sh`, un script propio sobre `entorno.sh`. Además de los puertos, copia la base de desarrollo `app` a `app_wt_<rama>` y crea una base de test propia:
   ```
-  bash scripts/cuadrilla/entorno.sh \
+  bash scripts/pandilla/entorno.sh \
     --instalar "pnpm install --frozen-lockfile" \
     --copiar .env --copiar apps/api/.env \
     --puerto API=18000 --puerto WEB=17000 --puerto METRO=19000 \
@@ -26,10 +26,10 @@ Ejemplo ficticio: monorepo pnpm con API en Node, app móvil Expo, landing estát
     --var "DATABASE_URL=postgres://app:app@127.0.0.1:5432/app_wt_<rama>" \
     --negar mcp__Neon
   ```
-- **Correr:** `scripts/cuadrilla/wt <comando>`
-- **Liberar:** `bash scripts/cuadrilla/entorno-db.sh --borrar`, que borra solo las bases `app_wt_*` de este worktree.
+- **Correr:** `scripts/pandilla/wt <comando>`
+- **Liberar:** `bash scripts/pandilla/entorno-db.sh --borrar`, que borra solo las bases `app_wt_*` de este worktree.
 - **Del checkout principal:** puertos 8080, 8081 y 3000; bases `app` y `app_test`.
-- **En fila:** el simulador iOS → `bash scripts/cuadrilla/fila.sh app-simulador -- scripts/cuadrilla/wt pnpm test:e2e`
+- **En fila:** el simulador iOS → `bash scripts/pandilla/fila.sh app-simulador -- scripts/pandilla/wt pnpm test:e2e`
 
 ## Compuertas
 
@@ -59,7 +59,7 @@ Ejemplo ficticio: monorepo pnpm con API en Node, app móvil Expo, landing estát
 | docs | `docs/`, `*.md` | `superficies` | |
 | generado | `pnpm-lock.yaml`, `packages/db/drizzle/meta/`, `dist/` | (no cuentan) | |
 
-**Revisores propios:** `.claude/cuadrilla/revisores/pipeline.md`.
+**Revisores propios:** `.claude/pandilla/revisores/pipeline.md`.
 
 ## Flujos críticos
 

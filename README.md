@@ -1,9 +1,11 @@
-# cuadrilla
+# pandilla
+
+> Delincuentes juveniles, pero responsables: se meten en tu repo de a varios, cada uno en su worktree, y no tocan nada sin que un panel los revise. Nunca mergean. Nunca tocan producción.
 
 Plugin de [Claude Code](https://claude.com/claude-code) para poner a varios agentes a trabajar en paralelo en tu repo, cada uno en su propio git worktree. Antes de commitear, cada cambio pasa por un panel de revisores y un verificador que intenta refutarlos. Un tablero local te muestra en vivo qué está haciendo cada agente.
 
 ```
-/cuadrilla:lote "arreglar el doble envío del formulario" "agregar export CSV de pedidos"
+/pandilla:lote "arreglar el doble envío del formulario" "agregar export CSV de pedidos"
 ```
 
 Cada pedido sigue el mismo flujo:
@@ -11,7 +13,7 @@ Cada pedido sigue el mismo flujo:
 1. Su worktree, con puertos propios.
 2. Implementación con un test rojo primero.
 3. Compuertas: formato, lint, tipos y tests.
-4. `/cuadrilla:panel`, con hasta 3 vueltas de corrección.
+4. `/pandilla:panel`, con hasta 3 vueltas de corrección.
 5. Prueba local rojo/verde.
 6. Regresión de flujos críticos.
 7. Un commit, y un PR o un commit local según el perfil del proyecto.
@@ -23,25 +25,25 @@ Nunca mergea. Nunca toca producción.
 
 | | |
 |---|---|
-| `/cuadrilla:lote` | Orquesta N tareas en paralelo (máximo 4 activas por defecto) y lleva el estado y el resumen |
-| `/cuadrilla:entrega` | El mismo ciclo para una sola tarea, en tu rama actual |
-| `/cuadrilla:panel` | Revisores en paralelo (Sonnet), elegidos por las rutas que toca el diff, y un verificador (Opus) que descarta los falsos positivos. Veredicto: APROBADO o CAMBIOS REQUERIDOS |
-| `/cuadrilla:iniciar` | Lee tu repo, te hace 3 o 4 preguntas y escribe el perfil `.claude/cuadrilla.md` |
-| `/cuadrilla:tablero` | Tablero local en http://localhost:7788: cada sesión como una mesa, con sus subagentes, herramientas, tokens, hallazgos y veredictos |
+| `/pandilla:lote` | Orquesta N tareas en paralelo (máximo 4 activas por defecto) y lleva el estado y el resumen |
+| `/pandilla:entrega` | El mismo ciclo para una sola tarea, en tu rama actual |
+| `/pandilla:panel` | Revisores en paralelo (Sonnet), elegidos por las rutas que toca el diff, y un verificador (Opus) que descarta los falsos positivos. Veredicto: APROBADO o CAMBIOS REQUERIDOS |
+| `/pandilla:iniciar` | Lee tu repo, te hace 3 o 4 preguntas y escribe el perfil `.claude/pandilla.md` |
+| `/pandilla:tablero` | Tablero local en http://localhost:7788: cada sesión como una mesa, con sus subagentes, herramientas, tokens, hallazgos y veredictos |
 | Revisores | `correctitud`, `sistemas`, `seguridad`, `datos`, `superficies`, `infra`, `costos` y el `verificador` |
 | `scripts/` | `entorno.sh` (puertos propios por worktree, instalación, permisos negados), `wt` (corre un comando con ese entorno) y `fila.sh` (fila para recursos que solo admiten uno a la vez) |
 
 ## Instalar
 
 ```
-/plugin marketplace add GonzaloAfa/cuadrilla
-/plugin install cuadrilla@cuadrilla
+/plugin marketplace add GonzaloAfa/pandilla
+/plugin install pandilla@pandilla
 ```
 
 Después, en cada repo donde lo quieras usar:
 
 ```
-/cuadrilla:iniciar
+/pandilla:iniciar
 ```
 
 Requisitos: git, Python 3 (para el tablero y el hook) y `gh` si las tareas publican PRs. Opcional: [T3 Code](https://t3.codes).
@@ -50,7 +52,7 @@ Requisitos: git, Python 3 (para el tablero y el hook) y `gh` si las tareas publi
 
 ### El perfil del proyecto
 
-Todo lo específico de tu repo vive en `.claude/cuadrilla.md`, versionado y editable:
+Todo lo específico de tu repo vive en `.claude/pandilla.md`, versionado y editable:
 
 - rama base;
 - compuertas y fallas conocidas;
@@ -63,13 +65,13 @@ Todo lo específico de tu repo vive en `.claude/cuadrilla.md`, versionado y edit
 
 Las skills no traen nada de ningún proyecto: leen el perfil. En [`ejemplos/`](ejemplos/) hay dos perfiles completos.
 
-Puedes sumar revisores propios en `.claude/cuadrilla/revisores/<nombre>.md`, por ejemplo uno de reglas clínicas o de pagos. También puedes complementar uno del plugin con las reglas de tu dominio.
+Puedes sumar revisores propios en `.claude/pandilla/revisores/<nombre>.md`, por ejemplo uno de reglas clínicas o de pagos. También puedes complementar uno del plugin con las reglas de tu dominio.
 
 ### Aislamiento entre worktrees
 
 Varios agentes a la vez chocan en tres cosas: puertos, bases de datos compartidas y recursos únicos. `entorno.sh` asigna puertos libres a cada worktree, sin repetir los de otros worktrees aunque estén apagados, y los deja en `.wt-env`. Cada comando corre con `wt <comando>`. Lo que no se puede duplicar, como un simulador o un e2e pesado, va en fila con `fila.sh`.
 
-Si tu proyecto necesita una base por worktree, `/cuadrilla:iniciar` te ayuda a escribir un script propio en `scripts/cuadrilla/`.
+Si tu proyecto necesita una base por worktree, `/pandilla:iniciar` te ayuda a escribir un script propio en `scripts/pandilla/`.
 
 ### Dos motores
 
@@ -84,12 +86,12 @@ Si tu proyecto necesita una base por worktree, `/cuadrilla:iniciar` te ayuda a e
 
 ### El tablero
 
-El plugin registra un hook en los eventos de sesión, herramientas y subagentes. El hook anota un resumen corto de cada evento en `~/.claude/cuadrilla/events.jsonl`, que rota a los 20 MB. `/cuadrilla:tablero` levanta un servidor que solo escucha en `127.0.0.1`. Nada sale de tu computador.
+El plugin registra un hook en los eventos de sesión, herramientas y subagentes. El hook anota un resumen corto de cada evento en `~/.claude/pandilla/events.jsonl`, que rota a los 20 MB. `/pandilla:tablero` levanta un servidor que solo escucha en `127.0.0.1`. Nada sale de tu computador.
 
 Variables de entorno:
 
-- `CUADRILLA_DIR`: carpeta del archivo de eventos;
-- `CUADRILLA_PUERTO`: puerto del tablero.
+- `PANDILLA_DIR`: carpeta del archivo de eventos;
+- `PANDILLA_PUERTO`: puerto del tablero.
 
 ## Por qué así
 

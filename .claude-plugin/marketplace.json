@@ -1,11 +1,11 @@
 {
-  "name": "cuadrilla",
+  "name": "pandilla",
   "owner": { "name": "Gonzalo Flores" },
   "metadata": { "description": "Agentes de Claude Code trabajando en paralelo, revisados por un panel y vistos en un tablero local." },
   "plugins": [
     {
-      "name": "cuadrilla",
-      "source": "./plugins/cuadrilla",
+      "name": "pandilla",
+      "source": "./plugins/pandilla",
       "description": "/lote, /panel y /entrega: tareas en paralelo en worktrees, panel de revisores con verificador adversarial, regresión de flujos críticos y un tablero local para ver a los agentes."
     }
   ]
