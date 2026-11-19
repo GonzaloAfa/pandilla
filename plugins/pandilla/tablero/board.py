@@ -20,6 +20,7 @@ PHASES = ["investigando", "desarrollando", "verificando", "panel", "probando", "
 state = {"offset": 0, "inode": None, "sessions": {}, "milestones": deque(maxlen=40)}
 git_cache = {}
 
+TASK_PREFIXES = ("Act as the implementation sub-agent for this task.", "Act as the review sub-agent for this task.")
 SYSTEM_PREFIXES = ("<task-notification", "<system", "[SYSTEM", "<command-", "<agent-message", "<local-command",
                    "Delegated task", "Caveat:", "This session is being continued")
 NOISE = re.compile(r"^(cd|ls|pwd|echo|sleep|true|clear|which|export)\b")
@@ -46,6 +47,9 @@ def is_system_prompt(prompt):
 
 def title_from_prompt(prompt):
     text = " ".join((prompt or "").split())
+    for prefix in TASK_PREFIXES:
+        if text.startswith(prefix):
+            text = text[len(prefix):].strip()
     if not text:
         return None
     quoted = re.search(r"«([^»]{3,90})»", text)
@@ -185,7 +189,7 @@ def apply(event):
         prompt = event.get("prompt")
         if not is_system_prompt(prompt):
             if not s["title"]:
-                s["title"] = title_from_prompt(prompt)
+                s["title"] = event.get("title") or title_from_prompt(prompt)
             s["prompt"] = prompt
         s["status"] = "trabajando"
     elif kind == "Stop" and not agent:

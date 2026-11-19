@@ -91,6 +91,17 @@ def transcript_tokens(path):
     return context + output
 
 
+def task_title(prompt):
+    """El título del pedido, del texto completo (el registro guarda solo 200 caracteres)."""
+    import re
+    text = " ".join((prompt or "").split())
+    for pattern in (r"«([^»]{3,90})»", r"--pedido\s+['\"]([^'\"]{3,90})", r"\b([A-Z]{2,6}-\d{1,6})\b"):
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1)
+    return None
+
+
 def main():
     raw = sys.stdin.read()
     try:
@@ -111,6 +122,7 @@ def main():
         "subagent_type": tool_input.get("subagent_type") if isinstance(tool_input, dict) else None,
         "agent_description": tool_input.get("description") if isinstance(tool_input, dict) and data.get("tool_name") == "Agent" else None,
         "prompt": short(data.get("prompt"), 200),
+        "title": task_title(data.get("prompt")),
     }
     if record["event"] in ("SubagentStop", "Stop"):
         message = data.get("last_assistant_message") or last_text_from_transcript(

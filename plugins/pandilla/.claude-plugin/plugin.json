@@ -1,6 +1,6 @@
 {
   "name": "pandilla",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Agentes en paralelo con panel de revisores, regresión obligatoria y tablero local.",
   "author": { "name": "Gonzalo Flores" },
   "license": "MIT",
