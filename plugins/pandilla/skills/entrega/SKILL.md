@@ -8,7 +8,7 @@ description: >-
 
 El mismo flujo que hace cada tarea de `/pandilla:lote`, para una sola tarea y en el checkout actual. Sirve para no tener que preguntar paso a paso «¿probaste en local?», «¿corriste la revisión?» o «¿ya está listo?».
 
-Lee primero el perfil `<raíz>/.claude/pandilla.md`. Si no existe, propone `/pandilla:iniciar`; si el usuario quiere seguir igual, pregunta la base, las compuertas y si se publica PR.
+Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raíz>/.claude/pandilla.md` (versionado en el repo), o `~/.claude/pandilla/perfiles/<repo>.md` (local, para repos donde no se puede commitear; `<repo>` es el nombre de la carpeta del checkout principal: `basename "$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")"`, así funciona igual desde un worktree). Los revisores propios están junto al perfil: `<raíz>/.claude/pandilla/revisores/` o `~/.claude/pandilla/perfiles/<repo>/revisores/`. En adelante, «el perfil» es el que encontraste. Si no hay ninguno, propone `/pandilla:iniciar`; si el usuario quiere seguir igual, pregunta la base, las compuertas y si se publica PR.
 
 Argumentos: `--pedido "<texto>"` (o un ticket), `--base <rama>`, `--sin-regresion` (solo cambios sin lógica: docs, textos; dilo en el resumen), `--pr <n>` (retoma con el PR ya abierto, desde el paso 6).
 

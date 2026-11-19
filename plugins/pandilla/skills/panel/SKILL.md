@@ -8,7 +8,7 @@ description: >-
 
 Todo corre en este computador. El panel no comenta en GitHub, no commitea, no hace push y no consulta producción.
 
-Lee primero el perfil del proyecto: `<raíz>/.claude/pandilla.md`. Si no existe, avisa que falta y propone `/pandilla:iniciar`; mientras tanto usa la base `main` (o `origin/HEAD`) y el ruteo por defecto de §3.
+Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raíz>/.claude/pandilla.md` (versionado en el repo), o `~/.claude/pandilla/perfiles/<repo>.md` (local, para repos donde no se puede commitear; `<repo>` es el nombre de la carpeta del checkout principal: `basename "$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")"`, así funciona igual desde un worktree). Los revisores propios están junto al perfil: `<raíz>/.claude/pandilla/revisores/` o `~/.claude/pandilla/perfiles/<repo>/revisores/`. En adelante, «el perfil» es el que encontraste. Si no hay ninguno, avisa que falta y propone `/pandilla:iniciar`; mientras tanto usa la base `main` (o `origin/HEAD`) y el ruteo por defecto de §3.
 
 ## Argumentos
 
@@ -66,20 +66,20 @@ Muestra el panel en una línea, con la razón de cada revisor, y sigue sin esper
 Lanza todos en **un solo mensaje**, con varias llamadas a `Agent` y `run_in_background: false`:
 
 - `subagent_type: "pandilla:revisor-<nombre>"` (los del plugin; usan Sonnet);
-- un revisor propio del proyecto (`.claude/pandilla/revisores/<nombre>.md`): `subagent_type: "general-purpose"`, `model: "sonnet"`, y el brief empieza con «Primero lee `<raíz>/.claude/pandilla/revisores/<nombre>.md`: define tu rol, tus reglas y tu formato de salida».
-- Si un revisor del plugin tiene un archivo con el mismo nombre en `.claude/pandilla/revisores/`, pásale también esa ruta: lo complementa.
+- un revisor propio del proyecto (`<carpeta de revisores>/<nombre>.md`): `subagent_type: "general-purpose"`, `model: "sonnet"`, y el brief empieza con «Primero lee `<carpeta de revisores>/<nombre>.md`: define tu rol, tus reglas y tu formato de salida».
+- Si un revisor del plugin tiene un archivo con el mismo nombre en la carpeta de revisores del proyecto, pásale también esa ruta: lo complementa.
 
 Brief de cada uno:
 
 ```
 Checkout: <ruta absoluta>
-Perfil: <raíz>/.claude/pandilla.md (o "no hay")
+Perfil: <ruta del perfil> (o "no hay")
 Diff: BASE=<sha> HEAD=<sha | árbol de trabajo> (si HEAD es un sha: lee con git show HEAD:ruta)
 Tus archivos: <lista>
 Todos los archivos del diff: <lista> (puedes abrirlos si los necesitas)
 Pedido: <resumen, máx. 15 líneas>
 Reglas y docs del área: <rutas>
-Complemento del proyecto: <ruta en .claude/pandilla/revisores/ o "no hay">
+Complemento del proyecto: <ruta en la carpeta de revisores o "no hay">
 Capturas: <rutas o "no hay">
 Re-revisión: <ruta del informe anterior o "no">
 Sigue tu formato de salida exacto.

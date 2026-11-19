@@ -63,7 +63,7 @@ Todo lo específico de tu repo vive en `.claude/pandilla.md`, versionado y edita
 - si se puede medir producción y cómo;
 - qué tienen prohibido las tareas.
 
-Las skills no traen nada de ningún proyecto: leen el perfil. En [`ejemplos/`](ejemplos/) hay dos perfiles completos.
+Las skills no traen nada de ningún proyecto: leen el perfil. Si el repo no es tuyo y no puedes commitear el perfil (por ejemplo, el repo de tu empresa), va en `~/.claude/pandilla/perfiles/<repo>.md`, con sus revisores en `~/.claude/pandilla/perfiles/<repo>/revisores/`. En [`ejemplos/`](ejemplos/) hay dos perfiles completos.
 
 Puedes sumar revisores propios en `.claude/pandilla/revisores/<nombre>.md`, por ejemplo uno de reglas clínicas o de pagos. También puedes complementar uno del plugin con las reglas de tu dominio.
 

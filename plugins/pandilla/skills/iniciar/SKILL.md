@@ -33,7 +33,7 @@ Con `AskUserQuestion`, en una sola tanda y con una recomendación marcada:
 
 ## 3. Escribir
 
-- `.claude/pandilla.md` con la plantilla [`plantilla-perfil.md`](plantilla-perfil.md), completa con lo que leíste. Nada inventado: si algo no se sabe, márcalo «por definir».
+- El perfil con la plantilla [`plantilla-perfil.md`](plantilla-perfil.md), completa con lo que leíste. Nada inventado: si algo no se sabe, márcalo «por definir». Va en `.claude/pandilla.md` del repo; si el repo no admite estos archivos (de un cliente o una empresa donde no corresponde commitearlos), en `~/.claude/pandilla/perfiles/<repo>.md`, con los revisores propios en `~/.claude/pandilla/perfiles/<repo>/revisores/` y los scripts en `~/.claude/pandilla/perfiles/<repo>/scripts/`.
 - `scripts/pandilla/`: copia `entorno.sh`, `wt` y `fila.sh` desde la carpeta `scripts/` del plugin (dos niveles arriba de esta skill). Así las tareas tienen una ruta estable y el dueño puede adaptarlos.
 - La sección «Entorno» del perfil con el comando completo de `scripts/pandilla/entorno.sh` para este repo: instalación, un `--puerto` por cada puerto que choca, las `--var` que los usan (URLs, `PORT`), `--copiar` para los archivos sin versionar que hacen falta, y `--negar` para cada herramienta que alcanza producción (por ejemplo `mcp__<servidor>`). Si el repo necesita algo que el script no cubre (copiar una base por worktree, levantar contenedores), escribe un script propio en `scripts/pandilla/` y documéntalo.
 - `.gitignore`: la carpeta de informes (`/tmp/` o la que elijas), `/.wt-env` y `/.claude/settings.local.json`.

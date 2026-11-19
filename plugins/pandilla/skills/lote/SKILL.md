@@ -8,7 +8,7 @@ description: >-
 
 Orquestas; no implementas. Cada pedido es una tarea con su worktree. Las tareas corren solas y tú llevas el tablero de estado y el resumen final.
 
-Lee primero el perfil del proyecto: `<raíz>/.claude/pandilla.md`. Si no existe, para y propone `/pandilla:iniciar`: sin perfil no sabes la base, las compuertas, cómo aislar los worktrees ni qué está prohibido. En adelante, «el perfil» es ese archivo y `wt` es el envoltorio que define su sección «Entorno».
+Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raíz>/.claude/pandilla.md` (versionado en el repo), o `~/.claude/pandilla/perfiles/<repo>.md` (local, para repos donde no se puede commitear; `<repo>` es el nombre de la carpeta del checkout principal: `basename "$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")"`, así funciona igual desde un worktree). Los revisores propios están junto al perfil: `<raíz>/.claude/pandilla/revisores/` o `~/.claude/pandilla/perfiles/<repo>/revisores/`. En adelante, «el perfil» es el que encontraste. Si no hay ninguno, para y propone `/pandilla:iniciar`: sin perfil no sabes la base, las compuertas, cómo aislar los worktrees ni qué está prohibido. 
 
 El tablero (`/pandilla:tablero`) muestra a las tareas y a sus revisores mientras trabajan.
 
@@ -68,14 +68,14 @@ BLOQUEADO: <motivo>
 ## Flujo obligatorio
 0. Rama y entorno:
    - `git checkout -b <rama según el perfil> <base>`.
-   - Prepara el worktree con el comando de «Entorno» del perfil. Cada comando del proyecto va con `wt <comando>`: el entorno no persiste entre comandos. Nunca uses los puertos ni las bases del checkout principal que lista el perfil.
+   - Prepara el worktree con el comando de «Entorno» del perfil. Si el perfil define un envoltorio (`wt`), cada comando del proyecto va con él: el entorno no persiste entre comandos. Nunca uses los puertos ni las bases del checkout principal que lista el perfil.
 1. Lee CLAUDE.md (o AGENTS.md), el perfil y los docs del área. Reproduce el problema antes de arreglarlo: un test rojo, o la pantalla en local.
 2. Implementa el cambio mínimo y correcto, con las «Reglas del proyecto» del perfil.
 3. Compuertas rápidas del perfil (formato, lint, tipos, tests unitarios).
 4. Panel:
    - [T3] Corre /pandilla:panel sobre tu rama. Corrige los C y W confirmados o plausibles; los S a tu criterio (anota cuáles dejaste). Repite el paso 3 y corre `/pandilla:panel --re-revision <informe>`. Máximo 3 vueltas; si en la tercera sigue habiendo C o W: BLOQUEADO.
    - [nativo] Escribe «LISTO PARA PANEL <ruta del worktree> <rama>» y espera. El orquestador corre el panel y te manda el informe; corrige los C y W, repite el paso 3 y vuelve a avisar. Sigue cuando recibas «APROBADO».
-5. Prueba local rojo → verde (OBLIGATORIA): las compuertas lentas del perfil (integración, e2e) y la prueba de punta a punta de «Prueba local». Los recursos compartidos van en fila: `bash <fila.sh del perfil> <recurso> -- wt <comando>`, como comando en segundo plano. Evidencia en la carpeta de informes del perfil.
+5. Prueba local rojo → verde (OBLIGATORIA): las compuertas lentas del perfil (integración, e2e) y la prueba de punta a punta de «Prueba local». Los recursos compartidos van en la fila que diga el perfil (`fila.sh` u otra, como un runner con `--wait`), como comando en segundo plano esperado sin polling. Evidencia en la carpeta de informes del perfil.
 6. Regresión (OBLIGATORIA): sigue la sección «Regresión» de la skill /pandilla:entrega con los «Flujos críticos» del perfil. Nunca consultes producción. Si necesitas un número real, pídelo en tu informe final: lo mide el orquestador. Si sale RIESGO, arregla y vuelve al paso 3.
 7. Con el panel APROBADO, la prueba verde y la regresión OK:
    - `git diff --numstat <base>`: ningún archivo ajeno con líneas borradas; ningún secreto ni dato real.
