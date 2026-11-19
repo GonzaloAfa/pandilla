@@ -35,10 +35,10 @@ def count_findings(message):
             sev = line.split(":", 1)[1].strip()[:1]
             if sev in counts:
                 counts[sev] += 1
-        elif line.startswith("| ") and line.count("|") > 4:
-            cell = line.split("|")[2].strip()
-            if cell in counts:
-                counts[cell] += 1
+        elif line.startswith("|") and line.count("|") >= 4:
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) >= 3 and cells[1] in counts and "DESCARTADO" not in cells[2].upper():
+                counts[cells[1]] += 1
     return counts if any(counts.values()) else None
 
 
@@ -50,6 +50,28 @@ def headline(message):
         if line.startswith("#### "):
             return short(line[5:].replace("·", "—"), 120)
     return None
+
+
+def last_text_from_transcript(path):
+    if not path or not os.path.exists(path):
+        return ""
+    last = ""
+    try:
+        with open(path) as f:
+            for line in f:
+                message = json.loads(line).get("message") or {}
+                if message.get("role") != "assistant":
+                    continue
+                content = message.get("content")
+                if isinstance(content, str):
+                    text = content
+                else:
+                    text = "\n".join(c.get("text", "") for c in content or [] if isinstance(c, dict) and c.get("type") == "text")
+                if text.strip():
+                    last = text
+    except Exception:
+        return ""
+    return last
 
 
 def transcript_tokens(path):
@@ -91,7 +113,8 @@ def main():
         "prompt": short(data.get("prompt"), 200),
     }
     if record["event"] in ("SubagentStop", "Stop"):
-        message = data.get("last_assistant_message") or ""
+        message = data.get("last_assistant_message") or last_text_from_transcript(
+            data.get("agent_transcript_path") if record["event"] == "SubagentStop" else data.get("transcript_path"))
         record["last_message"] = short(message, 300)
         record["findings"] = count_findings(message)
         record["headline"] = headline(message)

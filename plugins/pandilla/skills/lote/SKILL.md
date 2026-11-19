@@ -10,7 +10,12 @@ Orquestas; no implementas. Cada pedido es una tarea con su worktree. Las tareas 
 
 Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raíz>/.claude/pandilla.md` (versionado en el repo), o `~/.claude/pandilla/perfiles/<repo>.md` (local, para repos donde no se puede commitear; `<repo>` es el nombre de la carpeta del checkout principal: `basename "$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")"`, así funciona igual desde un worktree). Los revisores propios están junto al perfil: `<raíz>/.claude/pandilla/revisores/` o `~/.claude/pandilla/perfiles/<repo>/revisores/`. En adelante, «el perfil» es el que encontraste. Si no hay ninguno, para y propone `/pandilla:iniciar`: sin perfil no sabes la base, las compuertas, cómo aislar los worktrees ni qué está prohibido. 
 
-El tablero (`/pandilla:tablero`) muestra a las tareas y a sus revisores mientras trabajan.
+El tablero (`/pandilla:tablero`) muestra el lote en vivo: un pizarrón con el título y los pedidos, 4 habitaciones (una por tarea activa, con su paso del flujo y lo que hace ahora), 2 sillas de espera para la cola, y los hitos. **Tú mantienes el pizarrón** con `python3 <plugin>/scripts/pizarron.py` (`<plugin>` es la carpeta dos niveles arriba de esta skill); `<repo>` es el nombre de la carpeta del checkout principal:
+
+- al terminar «Preparar»: `pizarron.py lote --repo <repo> --titulo "<título corto del lote>" --tarea "<ID>|<título>" …` (todas quedan en espera);
+- al despachar cada una: `pizarron.py tarea --repo <repo> --id <ID> --estado activa --rama <rama>` (y `--worktree <ruta>` si la conoces);
+- al terminar cada una: `--estado lista --pr "<PR #n o rama + commit>"` o `--estado bloqueada --pr "<motivo corto>"`;
+- al cerrar el lote: `pizarron.py cerrar --repo <repo>`.
 
 ## 0. Motor
 

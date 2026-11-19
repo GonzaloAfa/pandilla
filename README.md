@@ -29,7 +29,7 @@ Nunca mergea. Nunca toca producción.
 | `/pandilla:entrega` | El mismo ciclo para una sola tarea, en tu rama actual |
 | `/pandilla:panel` | Revisores en paralelo (Sonnet), elegidos por las rutas que toca el diff, y un verificador (Opus) que descarta los falsos positivos. Veredicto: APROBADO o CAMBIOS REQUERIDOS |
 | `/pandilla:iniciar` | Lee tu repo, te hace 3 o 4 preguntas y escribe el perfil `.claude/pandilla.md` |
-| `/pandilla:tablero` | Tablero local en http://localhost:7788: cada sesión como una mesa, con sus subagentes, herramientas, tokens, hallazgos y veredictos |
+| `/pandilla:tablero` | Tablero local en http://localhost:7788: un pizarrón con el lote y sus pedidos, 4 habitaciones (una por tarea activa, con el paso del flujo en que va: investigando, desarrollando, verificando, panel, probando, regresión, entregando; qué hace ahora y quiénes están adentro) y 2 sillas de espera para la cola |
 | Revisores | `correctitud`, `sistemas`, `seguridad`, `datos`, `superficies`, `infra`, `costos` y el `verificador` |
 | `scripts/` | `entorno.sh` (puertos propios por worktree, instalación, permisos negados), `wt` (corre un comando con ese entorno) y `fila.sh` (fila para recursos que solo admiten uno a la vez) |
 
