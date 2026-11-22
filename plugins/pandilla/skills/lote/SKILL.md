@@ -1,7 +1,7 @@
 ---
 name: lote
 description: >-
-  Lanza un lote de pedidos o tickets en paralelo, cada uno en su propio git worktree: implementación, compuertas, /panel con re-revisión, prueba local rojo/verde, regresión de flujos críticos y un único PR (o un commit local, según el perfil del proyecto). Usa T3 Code si está disponible y, si no, subagentes de Claude Code con worktree. Usar con "/lote "pedido 1" "pedido 2"", "/lote ABC-12 ABC-13", "lanza un lote", "trabaja estos pedidos en paralelo".
+  Lanza un lote de pedidos o tickets en paralelo, cada uno en su propio git worktree: implementación, compuertas, /panel con re-revisión, prueba local completa rojo/verde (todo el flujo arriba, sin atajos, navegador si lo ve una persona), regresión de flujos críticos y un único PR (o un commit local, según el perfil del proyecto). Usa T3 Code si está disponible y, si no, subagentes de Claude Code con worktree. Usar con "/lote "pedido 1" "pedido 2"", "/lote ABC-12 ABC-13", "lanza un lote", "trabaja estos pedidos en paralelo".
 ---
 
 # /lote
@@ -35,6 +35,7 @@ El tablero (`/pandilla:tablero`) muestra el lote en vivo: un pizarrón con el t�
   - tocan los mismos archivos que otro pedido del lote, o agregan migración a la vez que otro (van en serie);
   - lo que el perfil liste en «Prohibido para las tareas».
 - **Radio en producción:** si el perfil permite medir prod (sección «Producción») y un pedido cambia comportamiento sobre datos existentes, mide tú, antes de lanzar, cuántos casos reales caen en lo que cambia, con las reglas del perfil (solo lectura, solo agregados). Ese número va en el brief. Las tareas nunca consultan prod: corren sin supervisión y leen texto de terceros, y una instrucción inyectada podría llegar a una herramienta con permisos.
+- **Flujo a probar por pedido.** Antes de lanzar, escribe para cada pedido el flujo completo que la tarea tendrá que recorrer en la prueba local: por dónde entra quien lo usa (pantalla, API pública, webhook), cada servicio y paso por el que pasa (login, pago, jobs, eventos), dónde se ve el resultado y si va en navegador (sí, siempre que lo vea un usuario final, un cliente o un operador). Va en el brief, en «Prueba completa». Un brief sin ese flujo no se despacha.
 - Muestra la tabla del lote y lanza sin esperar más si el usuario ya pidió lanzarlo.
 
 ## 2. Despachar
@@ -54,7 +55,8 @@ El tablero (`/pandilla:tablero`) muestra el lote en vivo: un pizarrón con el t�
   - En T3, lánzala con `delegate_task` `role: "review"` sin worktree. En nativo, con un `Agent` `general-purpose` nuevo.
   - Si deja C, W o SEC confirmados, pásaselos a la tarea que implementó: corrige y sube los commits al mismo PR (o a la misma rama), y lanza otra revisión.
 - Si una tarea pregunta algo que solo el usuario puede decidir, pásale la pregunta tal cual.
-- **Listo para merge:** panel APROBADO, compuertas verdes, regresión OK, revisión independiente sin C ni SEC y, con PR, la CI verde.
+- **Verifica tú la prueba local antes de aceptar una entrega.** Lee la tabla de cobertura y abre la evidencia (capturas, logs). Devuélvela a la tarea si: falta un paso del flujo del brief, un paso no es `real` (función llamada a mano, evento publicado a mano, estado forzado), un servicio del flujo estaba abajo, falta el rojo en la base, o lo ve una persona y no hay capturas del navegador. El informe de la tarea no basta: «lo probé» sin tabla y evidencia no cuenta.
+- **Listo para merge:** panel APROBADO, compuertas verdes, prueba local completa verificada por ti, regresión OK, revisión independiente sin C ni SEC y, con PR, la CI verde. Nunca digas «listo» con algo «no probado» o «pendiente» en el informe.
 - **Nunca mergees.** Lo decide el usuario. Si el perfil dice qué pasa después del merge (despliegue automático, algo manual pendiente), dilo por cada PR.
 - Al final: resumen por pedido (PR o rama, veredicto del panel, vueltas, qué se probó y la evidencia, pendientes) en la carpeta de informes del perfil (por defecto `tmp/lotes/<AAAAMMDD-HHMM>.md`, ignorada por git).
 
@@ -70,6 +72,9 @@ BLOQUEADO: <motivo>
 <problema, arreglo esperado, cómo se prueba; spec, ticket o docs que aplican>
 <radio en producción medido por el orquestador, si aplica>
 
+## Prueba completa
+<entrada real (pantalla, API pública, webhook) → cada servicio y paso del flujo (login, pago, jobs, eventos) → dónde se ve el resultado; navegador: sí/no y por qué; casos rojo/verde>
+
 ## Flujo obligatorio
 0. Rama y entorno:
    - `git checkout -b <rama según el perfil> <base>`.
@@ -80,7 +85,7 @@ BLOQUEADO: <motivo>
 4. Panel:
    - [T3] Corre /pandilla:panel sobre tu rama. Corrige los C y W confirmados o plausibles; los S a tu criterio (anota cuáles dejaste). Repite el paso 3 y corre `/pandilla:panel --re-revision <informe>`. Máximo 3 vueltas; si en la tercera sigue habiendo C o W: BLOQUEADO.
    - [nativo] Escribe «LISTO PARA PANEL <ruta del worktree> <rama>» y espera. El orquestador corre el panel y te manda el informe; corrige los C y W, repite el paso 3 y vuelve a avisar. Sigue cuando recibas «APROBADO».
-5. Prueba local rojo → verde (OBLIGATORIA): las compuertas lentas del perfil (integración, e2e) y la prueba de punta a punta de «Prueba local». Los recursos compartidos van en la fila que diga el perfil (`fila.sh` u otra, como un runner con `--wait`), como comando en segundo plano esperado sin polling. Evidencia en la carpeta de informes del perfil.
+5. Prueba local COMPLETA rojo → verde (OBLIGATORIA Y ESTRICTA): sigue las reglas del paso 3 de la skill /pandilla:entrega. Todos los servicios del flujo arriba; el flujo de «Prueba completa» de este brief recorrido de punta a punta por su entrada real (pantalla, API pública, webhook), sin llamar funciones internas ni publicar eventos a mano ni forzar estados; navegador con capturas si lo ve un usuario final, un cliente o un operador; rojo en la base y verde en la rama por la misma vía. Deja la tabla de cobertura (paso · real/sembrado · base · rama · evidencia) en la carpeta de informes. Si no puedes completarla: BLOQUEADO con el motivo, nunca «pendiente». Además, las compuertas lentas del perfil (integración, e2e). Los recursos compartidos van en la fila que diga el perfil (`fila.sh` u otra, como un runner con `--wait`), como comando en segundo plano esperado sin polling.
 6. Regresión (OBLIGATORIA): sigue la sección «Regresión» de la skill /pandilla:entrega con los «Flujos críticos» del perfil. Nunca consultes producción. Si necesitas un número real, pídelo en tu informe final: lo mide el orquestador. Si sale RIESGO, arregla y vuelve al paso 3.
 7. Con el panel APROBADO, la prueba verde y la regresión OK:
    - `git diff --numstat <base>`: ningún archivo ajeno con líneas borradas; ningún secreto ni dato real.

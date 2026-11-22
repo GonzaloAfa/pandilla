@@ -1,7 +1,7 @@
 ---
 name: entrega
 description: >-
-  Ciclo completo para llevar un cambio hasta «listo para merge» en el checkout y la rama actuales: compuertas, /panel con re-revisión, prueba local rojo/verde, regresión de flujos críticos, un commit, un PR (o commit local según el perfil), revisión independiente en sesión limpia, correcciones y resumen final. Usar con "/entrega", "llévalo a PR", "déjalo listo para merge", o al terminar de implementar algo. Invocarla autoriza el commit y, si el perfil publica PRs, el push y el PR de ESTA tarea; nunca el merge.
+  Ciclo completo para llevar un cambio hasta «listo para merge» en el checkout y la rama actuales: compuertas, /panel con re-revisión, prueba local completa rojo/verde (todo el flujo arriba, sin atajos, navegador si lo ve una persona), regresión de flujos críticos, un commit, un PR (o commit local según el perfil), revisión independiente en sesión limpia, correcciones y resumen final. Usar con "/entrega", "llévalo a PR", "déjalo listo para merge", o al terminar de implementar algo. Invocarla autoriza el commit y, si el perfil publica PRs, el push y el PR de ESTA tarea; nunca el merge.
 ---
 
 # /entrega
@@ -28,12 +28,18 @@ Las del perfil («Compuertas»), en su orden, con `wt` si estás en un worktree.
 
 Corre `/pandilla:panel`. Corrige los C y W confirmados o plausibles; los S a tu criterio (anota cuáles dejaste). Repite el paso 1 y corre `--re-revision <informe>`. Máximo 3 vueltas; si en la tercera siguen los C o W, para y pregunta.
 
-## 3. Prueba local rojo/verde (obligatoria)
+## 3. Prueba local completa, rojo/verde (obligatoria y estricta)
 
-- Reproduce el problema en la base (rojo) y en la rama (verde), por la vía más real: test, UI, API o consola. Todo bug trae un test que falla antes del arreglo.
+Una prueba solo cuenta si es **completa**. Estas reglas no tienen excepción ni se cambian por «es un cambio chico»:
+
+- **Todo el flujo arriba.** Levanta todos los servicios por los que pasa el flujo, no solo los que tocaste: si el dato viaja de A a B a C, los tres corren. Si uno no levanta, se arregla o la tarea queda BLOQUEADA.
+- **Entrada real y pasos reales.** El flujo parte por donde parte para quien lo usa (la pantalla, la API pública, el webhook o el evento que lo dispara de verdad) y recorre cada paso intermedio por su camino normal: login real, pago por la pasarela local o sandbox, jobs y colas que corren solos. **Prohibido** llamar a mano funciones internas, publicar a mano eventos o mensajes, forzar estados en la base o saltarse un servicio para llegar más rápido. Sembrar datos solo vale *antes* de empezar el flujo.
+- **Navegador si lo ve una persona.** Si el cambio lo ve o lo usa un usuario final, un cliente o un operador (pantalla, correo, notificación, un dato que se muestra o se cobra), la prueba se hace en el navegador (o en el simulador, si es app), con capturas antes y después. GraphQL, curl o la consola complementan, nunca reemplazan.
+- **Rojo y verde por la misma vía.** El rojo en la base y el verde en la rama se corren con el mismo flujo completo. Todo bug trae además un test que falla antes del arreglo, si el área ya tiene infra de test.
+- **Tabla de cobertura** en la evidencia: una fila por paso del flujo (pantalla, servicio, job, evento) con cómo se ejecutó (`real` o `sembrado antes del flujo`), resultado en la base, resultado en la rama y archivo de evidencia. Si un paso del flujo no aparece o no es `real`, la prueba no está completa.
+- **Si no se puede completar: BLOQUEADO**, con el motivo y lo que falta (un servicio que no levanta, credenciales de sandbox, datos). Nunca «pendiente», «no probado» o «fuera de alcance» como nota al pie de algo que se declara listo.
 - Compuertas lentas y la prueba de «Prueba local» del perfil. Recursos compartidos en fila (`fila.sh`), como comando en segundo plano.
-- Si tocaste UI, capturas antes y después.
-- Evidencia en la carpeta de informes del perfil (por defecto `tmp/entrega/<rama>/`).
+- Evidencia en la carpeta de informes del perfil (por defecto `tmp/entrega/<rama>/`): la tabla de cobertura, capturas y logs.
 
 ## 4. Regresión de flujos críticos (obligatoria)
 
@@ -42,18 +48,18 @@ Demostrar con evidencia que el cambio no rompe un flujo crítico. Complementa la
 1. **Mapa de impacto.** Busca con grep TODOS los consumidores de lo que cambió: quienes llaman a la función, quienes leen lo que el cambio escribe, las pantallas, APIs, jobs y servicios que muestran o reciben el dato, y los clientes viejos (apps instaladas, integraciones) si cambia una respuesta. Por cada uno: archivo:línea, qué recibía antes y qué recibe ahora, y si depende del comportamiento viejo.
 2. **Flujos críticos.** De los «Flujos críticos» del perfil, elige los que toca el mapa. Lista también los descartados y por qué.
 3. **Tests: base frente a la rama.** Corre las compuertas y los tests de los consumidores en la rama y, para lo que falle, en la base, en un worktree temporal (`git worktree add --detach ../<repo>-base-<slug> <base>`, prepáralo, y bórralo al terminar). Nunca `git stash`. Un test que falla en la rama y no en la base es una regresión.
-4. **De punta a punta en local**, para cada flujo crítico elegido, con la «Prueba local» del perfil. Si un flujo no se puede probar en local, dilo y explica por qué: nunca lo marques OK.
+4. **De punta a punta en local**, para cada flujo crítico elegido, con las reglas del paso 3 (todo el flujo arriba, entrada y pasos reales, navegador si lo ve una persona) y la «Prueba local» del perfil. Un flujo que no se puede probar completo deja la entrega BLOQUEADA, salvo que el usuario acepte explícitamente esa excepción; nunca lo marques OK.
 5. **Producción**, solo si el perfil lo permite y con sus reglas (solo lectura, solo agregados): cuántos casos reales caen en lo que cambia. Dentro de /lote lo mide el orquestador, nunca la tarea. Si sale una hipótesis sobre un bug que ya existía, confírmala antes de darla por cierta.
 
 Informe (`<carpeta de informes>/regresion/<rama>.md`): tabla de consumidores, tabla de flujos (cómo se probó, resultado, evidencia), tests base frente a rama, lo que no se pudo probar y los riesgos. Última línea: «REGRESIÓN <rama>: OK, <k> flujos verificados» o «REGRESIÓN <rama>: RIESGO, <resumen>». Si sale RIESGO, arregla, vuelve al paso 1 y re-revisa con el panel.
 
 ## 5. Commit y publicación
 
-Solo con el panel APROBADO y los pasos 3 y 4 en verde:
+Solo con el panel APROBADO, los pasos 3 y 4 en verde y la tabla de cobertura completa (todos los pasos `real`):
 
 - `git diff --numstat <base>` (pisadas) y que no entre ningún secreto ni dato real.
 - Un solo commit con el formato del perfil. Si cambió algo visible o una regla, actualiza los docs del área en el mismo commit.
-- **Publicación: pr** → push y PR con la herramienta del perfil (skill del repo o `gh pr create`), en un solo push. Cuerpo: veredicto del panel y S que quedaron, evidencia rojo/verde, tabla de regresión y lo que no se pudo probar.
+- **Publicación: pr** → push y PR con la herramienta del perfil (skill del repo o `gh pr create`), en un solo push. Cuerpo: veredicto del panel y S que quedaron, evidencia rojo/verde con la tabla de cobertura, y tabla de regresión.
 - **Publicación: local** → sin push. El mismo contenido va en `<carpeta de informes>/entrega/<rama>/informe.md`.
 
 ## 6. Revisión independiente en una sesión limpia
@@ -68,7 +74,7 @@ Si quedan C, W o SEC confirmados: corrígelos, repite los pasos 1 y 3 y la parte
 ## 7. Cierre
 
 - Con PR, mira la CI (`gh pr checks <n>`); si algo falla, revisa el log, arregla y súbelo al mismo PR.
-- **Listo para merge:** panel APROBADO, compuertas verdes, regresión OK, revisión independiente sin C ni SEC y, con PR, CI verde y `mergeable`.
+- **Listo para merge:** panel APROBADO, compuertas verdes, prueba local completa (tabla de cobertura sin pasos saltados ni simulados, navegador si lo ve una persona), regresión OK, revisión independiente sin C ni SEC y, con PR, CI verde y `mergeable`. Si falta cualquiera, no digas «listo»: di qué falta.
 - **No mergees.** Lo decide el usuario. Si el perfil dice qué pasa al mergear (despliegue automático, pasos manuales), dilo.
 - Resumen final en una tabla: PR o rama · panel · rojo/verde · regresión · revisión · CI · pendiente; más una línea con qué cambia para quien usa el producto.
 - En un worktree, libera el entorno con el comando del perfil.
