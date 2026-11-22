@@ -37,7 +37,11 @@ En orden; las lentas van en la prueba local.
 
 ## Prueba local
 
+Regla fija de pandilla: la prueba es completa o no cuenta (todos los servicios del flujo arriba, entrada y pasos reales sin atajos, navegador con capturas si lo ve una persona, tabla de cobertura; si no se puede, BLOQUEADO). Ver el paso 3 de /pandilla:entrega.
+
 - Cómo levantar lo necesario con los puertos del worktree: <comando>
+- Flujos típicos y sus servicios (para armar la «Prueba completa» de cada brief): <flujo → servicios, p. ej. «compra web → web, api, pagos (sandbox), worker de eventos»>
+- Cómo pagar, loguearse o disparar webhooks en local sin atajos: <tarjetas de sandbox, cuentas de prueba, CLI de webhooks>
 - Datos de prueba y usuarios: <semillas, cuentas de prueba>
 - Evidencia: capturas, salida de tests, logs.
 
