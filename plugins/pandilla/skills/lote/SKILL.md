@@ -27,6 +27,7 @@ El tablero (`/pandilla:tablero`) muestra el lote en vivo: un pizarrón con el t�
 - **Entrada:** según «Pedidos» del perfil: texto (`/lote "arreglar X" "agregar Y"`), tickets (lee cada uno con la herramienta del gestor: Linear, GitHub Issues, Jira…) o un archivo con un pedido por sección. Por cada uno: título corto, problema, arreglo esperado, cómo se prueba.
 - **Recursos:** `df -h /` (con menos de 40 GB libres, avisa), `git worktree list`, y lo que pida el perfil (por ejemplo `docker ps`).
 - **Alinear (obligatorio):** sigue `<plugin>/referencias/alinear.md` con todos los pedidos. Tú verificas los hechos (la premisa en la base, el síntoma, el código actual); el usuario toma las decisiones, en una ronda de preguntas numeradas con tu respuesta recomendada. Un pedido cuya premisa ya no se cumple no se lanza sin una decisión del usuario. Ningún pedido se despacha con una decisión abierta.
+- **Complementos:** corre `<plugin>/scripts/complementos.sh` una vez y aplica `<plugin>/referencias/complementos.md` en cada paso, con los instalados y sin los que el perfil apague. En cada brief, la línea «Complementos» lista los que le tocan a esa tarea (nombre y ruta). Si faltan los recomendados, dilo una vez en la tabla del lote y propone `/pandilla:iniciar --complementos`.
 - Descarta, explicando por qué, los pedidos que:
   - escriben en producción o necesitan datos reales (backfills, migraciones de datos, scripts contra prod);
   - publican o mandan algo de verdad (correos, mensajes, push, cobros, builds de tienda, despliegues manuales);
@@ -55,7 +56,7 @@ El tablero (`/pandilla:tablero`) muestra el lote en vivo: un pizarrón con el t�
   - En T3, lánzala con `delegate_task` `role: "review"` sin worktree. En nativo, con un `Agent` `general-purpose` nuevo.
   - Si deja C, W o SEC confirmados, pásaselos a la tarea que implementó: corrige y sube los commits al mismo PR (o a la misma rama), y lanza otra revisión.
 - Si una tarea pregunta algo que solo el usuario puede decidir, pásale la pregunta tal cual.
-- **Verifica tú la prueba local antes de aceptar una entrega.** Lee la tabla de cobertura y abre la evidencia (capturas, logs). Devuélvela a la tarea si: falta un paso del flujo del brief, un paso no es `real` (función llamada a mano, evento publicado a mano, estado forzado), un servicio del flujo estaba abajo, falta el rojo en la base, o lo ve una persona y no hay capturas del navegador. El informe de la tarea no basta: «lo probé» sin tabla y evidencia no cuenta.
+- **Verifica tú la prueba local antes de aceptar una entrega**, y si está `reality-checker`, lánzalo además sobre la evidencia (ver complementos). Lee la tabla de cobertura y abre la evidencia (capturas, logs). Devuélvela a la tarea si: falta un paso del flujo del brief, un paso no es `real` (función llamada a mano, evento publicado a mano, estado forzado), un servicio del flujo estaba abajo, falta el rojo en la base, o lo ve una persona y no hay capturas del navegador. El informe de la tarea no basta: «lo probé» sin tabla y evidencia no cuenta.
 - **En un `bug`, verifica también el comando rojo:** que compruebe el síntoma exacto del brief, que haya evidencia de que el arnés hizo lo que debía (el rojo no vino del script), que la causa confirmada y las hipótesis descartadas estén en el informe y que no quede ningún `[DEBUG-`. Una tarea que termina en «NO SE REPRODUCE» no es un fracaso: revisa su evidencia y propón al usuario cerrar el ticket o pedir más datos.
 - **Listo para merge:** panel APROBADO, compuertas verdes, prueba local completa verificada por ti, regresión OK, revisión independiente sin C ni SEC y, con PR, la CI verde. Nunca digas «listo» con algo «no probado» o «pendiente» en el informe.
 - **Nunca mergees.** Lo decide el usuario. Si el perfil dice qué pasa después del merge (despliegue automático, algo manual pendiente), dilo por cada PR.
@@ -78,6 +79,9 @@ BLOQUEADO: <motivo>
 <el bloque que deja la alineación: tipo, premisa, síntoma exacto (bug), decisiones con quién las tomó, fuera de alcance>
 Si al implementar aparece una decisión que no está aquí, no la tomes tú: BLOQUEADO con la pregunta y tu respuesta recomendada.
 
+## Complementos
+<los de referencias/complementos.md que le tocan a esta tarea, con su ruta; «ninguno» si no aplica. Cárgalos en el paso que indica cada uno>
+
 ## Prueba completa
 <entrada real (pantalla, API pública, webhook) → cada servicio y paso del flujo (login, pago, jobs, eventos) → dónde se ve el resultado; navegador: sí/no y por qué; casos rojo/verde>
 
@@ -88,8 +92,8 @@ Si al implementar aparece una decisión que no está aquí, no la tomes tú: BLO
 1. Lee CLAUDE.md (o AGENTS.md), el perfil y los docs del área.
    - Tipo `bug`: sigue `<ruta absoluta del plugin>/referencias/bug-rojo.md` completo antes de tocar código: comando rojo con el síntoma exacto y el arnés verificado, caso reducido, 3–5 hipótesis, logs `[DEBUG-xxxx]`, test que falla, arreglo. Si no se reproduce: termina con «NO SE REPRODUCE».
    - Tipo `cambio`: muestra el comportamiento actual en local antes de cambiarlo (un test o la pantalla).
-2. Implementa el cambio mínimo y correcto, con las «Reglas del proyecto» del perfil. Si cambia algo visible o una regla, actualiza en este mismo paso los docs del área: el panel los revisa en la primera vuelta.
-3. Compuertas rápidas del perfil (formato, lint, tipos, tests unitarios).
+2. Antes de escribir código, el «Mapa de reutilización» de `<ruta absoluta del plugin>/referencias/diseno-simple.md` en tu informe: qué existente reutilizas (buscado con `git grep` por el concepto) y, por cada pieza nueva, por qué no sirve lo que hay. Después implementa el cambio mínimo y correcto, con las «Reglas del proyecto» del perfil y las cuatro preguntas de ese documento. Si cambia algo visible o una regla, actualiza en este mismo paso los docs del área: el panel los revisa en la primera vuelta.
+3. Compuertas rápidas del perfil (formato, lint, tipos, tests unitarios) y `<ruta absoluta del plugin>/scripts/duplicados.sh <base>`: un duplicado de código nuevo se reutiliza o se justifica en el mapa. La primera vez que pasan, corre `/simplify` sobre tu diff (reutilización, simplificación, capas que sobran), aplica lo que mejore sin cambiar el comportamiento y repite las compuertas.
 4. Panel:
    - [T3] Corre /pandilla:panel sobre tu rama. Corrige los C y W confirmados o plausibles; los S a tu criterio (anota cuáles dejaste). Repite el paso 3 y corre `/pandilla:panel --re-revision <informe>`. Máximo 3 vueltas; si en la tercera sigue habiendo C o W: BLOQUEADO.
    - [nativo] Escribe «LISTO PARA PANEL <ruta del worktree> <rama>» y espera. El orquestador corre el panel y te manda el informe; corrige los C y W, repite el paso 3 y vuelve a avisar. Sigue cuando recibas «APROBADO».

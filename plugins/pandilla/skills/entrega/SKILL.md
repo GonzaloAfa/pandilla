@@ -14,6 +14,8 @@ Argumentos: `--pedido "<texto>"` (o un ticket), `--base <rama>`, `--sin-regresio
 
 Lleva una lista de pasos visible y actualízala en cada paso.
 
+**Complementos:** al empezar, corre `<plugin>/scripts/complementos.sh` y aplica `<plugin>/referencias/complementos.md` en cada paso con los instalados (y sin los que el perfil apague). Los que falten no bloquean: dilo una vez en el resumen y propone `/pandilla:iniciar --complementos`.
+
 ## 0. Antes de empezar
 
 - La rama no puede ser la base ni una rama de release. Si lo es, crea una según el perfil.
@@ -25,6 +27,12 @@ Lleva una lista de pasos visible y actualízala en cada paso.
 ## 1. Compuertas
 
 Las del perfil («Compuertas»), en su orden, con `wt` si estás en un worktree. Las lentas (integración, e2e) pueden esperar al paso 3. Las fallas conocidas del perfil se nombran, no se esconden; ante la duda, córrelas en la base (§Regresión 3).
+
+## 1b. Diseño simple
+
+- `<plugin>/scripts/duplicados.sh <base>`: cada duplicado de código nuevo se reutiliza o se justifica.
+- El «Mapa de reutilización» de `<plugin>/referencias/diseno-simple.md` en la carpeta de informes, hecho desde el diff: qué existente se reutiliza y por qué cada pieza nueva no podía usar lo que había. Si encuentras algo existente que servía, cámbialo ahora.
+- `/simplify` sobre el diff: aplica lo que simplifique sin cambiar el comportamiento y repite el paso 1.
 
 ## 2. /panel
 

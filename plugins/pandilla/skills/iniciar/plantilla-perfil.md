@@ -83,3 +83,9 @@ Además de producción, publicar y secretos: <carpetas o archivos>
 ## Reglas del proyecto
 
 Las que no están en `CLAUDE.md` y los agentes tienen que seguir: <lista>
+
+## Complementos
+
+<!-- Skills y agentes de terceros que pandilla usa si están instalados (referencias/complementos.md del plugin). -->
+Apagados: <ninguno, o nombres separados por coma>
+Reglas propias: <por ejemplo «mobile-native siempre que se toque apps/web»; o ninguna>

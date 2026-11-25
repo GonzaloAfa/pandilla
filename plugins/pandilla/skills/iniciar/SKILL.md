@@ -6,6 +6,8 @@ description: >-
 
 # /iniciar
 
+Con `--complementos` corre solo el paso 5 (sirve para un repo que ya tiene perfil, o para instalar los complementos en el usuario).
+
 Deja el repo listo para `/pandilla:lote`, `/pandilla:panel` y `/pandilla:entrega`. El resultado es un perfil versionado en el repo, que el dueño controla y edita.
 
 ## 1. Leer el proyecto
@@ -49,3 +51,13 @@ En un worktree temporal (`git worktree add --detach ../<repo>-pandilla-prueba <b
 - libera ambos con `--borrar` y bórralos.
 
 Muestra el perfil al usuario y lo que no se pudo probar. El commit lo decide el usuario (o va en el mismo PR si pidió uno).
+
+## 5. Complementos
+
+pandilla usa skills y agentes de terceros si están instalados (`referencias/complementos.md`, dos niveles arriba de esta skill).
+
+1. Corre `scripts/complementos.sh --faltan` desde la carpeta del plugin.
+2. Si falta alguno, muestra la tabla (qué hace cada uno y en qué paso entra) y pregunta con `AskUserQuestion` (`multiSelect`) cuáles instalar. Recomienda instalarlos en el usuario (`~/.claude`), así valen para todos sus proyectos sin tocar el repo.
+3. Instala solo los elegidos, con el comando que da el script. Los de instalación «manual» no se instalan: di de dónde los tiene que traer el usuario.
+4. Corre `scripts/complementos.sh` de nuevo y muestra el estado final.
+5. Si el usuario quiere apagar alguno en este proyecto, escríbelo en la sección «Complementos» del perfil (`Apagados: …`).

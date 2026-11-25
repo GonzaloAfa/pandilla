@@ -40,14 +40,14 @@ Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raí
 
 ## 3. Ruteo
 
-Usa la tabla «Rutas y revisores» del perfil: tipo → rutas → revisores. Los revisores del plugin son `correctitud`, `sistemas`, `seguridad`, `datos`, `superficies`, `infra` y `costos`; el perfil puede agregar revisores propios (§4).
+Usa la tabla «Rutas y revisores» del perfil: tipo → rutas → revisores. Los revisores del plugin son `correctitud`, `sistemas`, `seguridad`, `datos`, `superficies`, `infra`, `costos` y `diseno`; el perfil puede agregar revisores propios (§4).
 
 Sin perfil, este ruteo por defecto:
 
 | Tipo | Rutas típicas | Revisores |
 |---|---|---|
-| ui | `*.tsx`, `*.vue`, `*.svelte`, `app/`, `pages/`, `components/`, `messages/`, `locales/` | `superficies`, `correctitud` |
-| backend | `api/`, `server/`, `src/` (sin UI), `lib/`, `packages/` | `correctitud`, `sistemas`, `seguridad`, `datos` |
+| ui | `*.tsx`, `*.vue`, `*.svelte`, `app/`, `pages/`, `components/`, `messages/`, `locales/` | `superficies`, `correctitud`, `diseno` |
+| backend | `api/`, `server/`, `src/` (sin UI), `lib/`, `packages/` | `correctitud`, `sistemas`, `seguridad`, `datos`, `diseno` |
 | datos | `migrations/`, `schema.*`, `prisma/`, `drizzle/`, `db/` | `datos`, `seguridad`, `correctitud` |
 | infra | `.github/`, `infra/`, `terraform/`, `Dockerfile*`, `*.yml` de despliegue, `scripts/*.sh` | `infra`, `seguridad` |
 | docs | `docs/`, `*.md` | `superficies` |
@@ -61,6 +61,7 @@ Reglas que valen siempre (además de las del perfil):
 - `costos` entra solo con señales de gasto, en cualquier tipo: llamadas a APIs pagadas o de IA (`openai`, `anthropic`, `bedrock`, `gemini`, SDKs de terceros que cobran por uso), envíos (correo, SMS, push, WhatsApp), jobs programados o colas (`cron`, `schedule`, `queue`, `job`), recorridos o consultas sobre colecciones completas, almacenamiento o logs nuevos por evento, o infraestructura que cambia tamaño o cantidad de recursos. Sin señales, no entra. En el uso real, `costos` en todo el backend dio 4 W en 22 corridas.
 - `infra` entra solo si el diff toca rutas de infra (tabla) o variables de entorno y configuración de despliegue.
 - **Diff chico** (≤ 30 líneas, ≤ 2 archivos, sin migración ni infra): `correctitud` y el especialista más pertinente.
+- `diseno` entra si el diff agrega código (no solo borra o cambia textos) en ui o backend. Recibe la ruta de `<plugin>/referencias/diseno-simple.md`, el «Mapa de reutilización» de la tarea si existe y la salida de `<plugin>/scripts/duplicados.sh <base>`.
 
 Muestra el panel en una línea, con la razón de cada revisor, y sigue sin esperar confirmación.
 
@@ -83,6 +84,7 @@ Lanza todos en **un solo mensaje**, con varias llamadas a `Agent` y `run_in_back
 - `subagent_type: "pandilla:revisor-<nombre>"` (los del plugin; usan Sonnet);
 - un revisor propio del proyecto (`<carpeta de revisores>/<nombre>.md`): `subagent_type: "general-purpose"`, `model: "sonnet"`, y el brief empieza con «Primero lee `<carpeta de revisores>/<nombre>.md`: define tu rol, tus reglas y tu formato de salida».
 - Si un revisor del plugin tiene un archivo con el mismo nombre en la carpeta de revisores del proyecto, pásale también esa ruta: lo complementa.
+- Complementos de diseño: si el diff toca UI, pásale a `superficies` también la ruta de `emil-ui-review` (o, si no está, la de `accessibility-auditor`) según `<plugin>/referencias/complementos.md`. Obtén la ruta con `<plugin>/scripts/complementos.sh --ruta <nombre>` (`<plugin>` es la carpeta dos niveles arriba de esta skill).
 
 Brief de cada uno:
 
