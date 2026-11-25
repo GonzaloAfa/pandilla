@@ -12,7 +12,7 @@ Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raí
 
 Argumentos: `--pedido "<texto>"` (o un ticket), `--base <rama>`, `--sin-regresion` (solo cambios sin lógica: docs, textos; dilo en el resumen), `--pr <n>` (retoma con el PR ya abierto, desde el paso 6).
 
-Lleva una lista de pasos visible y actualízala en cada paso.
+Lleva una lista de pasos visible y actualízala en cada paso. Escribe además una línea por paso cerrado en `<carpeta de informes>/entrega/<rama>/estado.md` (paso · resultado · evidencia · siguiente): si la sesión se compacta o pasa a otra, se retoma desde ahí.
 
 **Complementos:** al empezar, corre `<plugin>/scripts/complementos.sh` y aplica `<plugin>/referencias/complementos.md` en cada paso con los instalados (y sin los que el perfil apague). Los que falten no bloquean: dilo una vez en el resumen y propone `/pandilla:iniciar --complementos`.
 

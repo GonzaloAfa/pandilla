@@ -19,8 +19,10 @@ El tablero (`/pandilla:tablero`) muestra el lote en vivo: un pizarrón con el t�
 
 ## 0. Motor
 
-- **T3 Code** (existe la herramienta `delegate_task`): cada tarea es un hilo de T3 con su worktree. Es una sesión completa: corre su propio /panel. El hilo de T3 tiene que estar en el proyecto del repo (el worktree se crea en el proyecto del hilo). Llama a `orchestrator_capabilities` una vez por hilo.
+- **T3 Code** (existe la herramienta `delegate_task`): cada tarea es un hilo de T3 con su worktree. El perfil elige cómo se ven, en «Motor T3»: `delegado` (por defecto: hilos hijos del orquestador, que le avisan al terminar) o `hilos` (hilos de primer nivel en la barra lateral, para que el usuario abra y converse con cada tarea). Es una sesión completa: corre su propio /panel. El hilo de T3 tiene que estar en el proyecto del repo (el worktree se crea en el proyecto del hilo). Llama a `orchestrator_capabilities` una vez por hilo.
 - **Claude Code nativo** (no hay `delegate_task`): cada tarea es un `Agent` con `isolation: "worktree"`, `subagent_type: "general-purpose"` y `run_in_background: true`. Un subagente no puede lanzar subagentes, así que **el /panel y la revisión independiente los corres tú** sobre su worktree, y le devuelves los hallazgos con `SendMessage`. El brief cambia en el paso 4 (ver abajo).
+
+**Contexto del orquestador:** un lote por sesión. El estado del lote vive en el pizarrón y en el informe del lote, no en tu memoria: actualízalos en cada cambio de estado. Si la sesión pasa los ~300k tokens (el plugin avisa), compacta con `/compact estado del lote <título>` y retoma desde el informe. Al cerrar el lote, propone `/clear` antes de otro.
 
 ## 1. Preparar
 
@@ -42,7 +44,8 @@ El tablero (`/pandilla:tablero`) muestra el lote en vivo: un pizarrón con el t�
 ## 2. Despachar
 
 - Máximo de tareas activas: el del perfil (por defecto 4). El resto queda en cola.
-- **T3:** `delegate_task` con `isolation: "worktree"`, `role: "implementation"`, `mode: "async"`, `title: "<id> · <resumen>"` y `task` = el brief completo. No hagas polling: sigue el `next` de cada delegate y espera sus notificaciones.
+- **T3, `Motor T3: delegado`:** `delegate_task` con `isolation: "worktree"`, `role: "implementation"`, `mode: "async"`, `title: "<id> · <resumen>"` y `task` = el brief completo. No hagas polling: sigue el `next` de cada delegate y espera sus notificaciones.
+- **T3, `Motor T3: hilos`:** `t3_thread_launch` por tarea con `title: "<id> · <resumen>"`, `message` = el brief completo, `workspaceStrategy: {type: "worktree", baseRef: "<base remota del perfil>", startFromOrigin: true, branch: "<rama según el perfil>"}` y `delegatedFrom` con tu hilo (entorno, id y título), para que quede enlazado. El perfil que pide `hilos` es el pedido del usuario de abrir hilos nuevos. Muestra el `link` de cada hilo en la tabla del lote. Para seguirlos, `t3_thread_wait` sobre los hilos activos (sin polling con sleep) y `t3_thread_read` de su última respuesta; el resto del flujo (panel, revisión independiente, verificación de la prueba) es igual.
 - **Nativo:** `Agent` con `isolation: "worktree"`, `run_in_background: true`, `description: "<id> · <resumen>"` y el brief. Lanza los de la primera tanda en un solo mensaje. Espera las notificaciones.
 
 ## 3. Seguir y cerrar
@@ -106,6 +109,7 @@ Si al implementar aparece una decisión que no está aquí, no la tomes tú: BLO
 8. Al cerrar, libera el entorno con el comando de «Entorno» del perfil.
 
 ## Reglas
+- **Estado en el informe:** al cerrar cada paso del flujo, agrega una línea a tu informe en la carpeta de informes (paso · resultado · evidencia · siguiente). Si la sesión se compacta, retoma leyendo el informe y el brief, no tu memoria.
 - Nunca escribas en producción ni publiques nada. Si hace falta: BLOQUEADO y explica.
 - Nunca toques `.env*`, secretos ni credenciales.
 - No crees infra de test nueva; usa la que hay.

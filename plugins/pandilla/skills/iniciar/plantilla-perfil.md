@@ -12,6 +12,7 @@ Lo leen `/pandilla:lote`, `/pandilla:panel` y `/pandilla:entrega`. Es del dueño
 - **Revisión independiente:** skill `/review-pr` del repo | `/code-review high`
 - **Pedidos:** texto | tickets de <Linear | GitHub Issues | Jira>
 - **Máximo de tareas activas:** 4
+- **Motor T3:** `delegado` (hilos hijos del orquestador) | `hilos` (hilos de primer nivel en la barra lateral de T3, para conversar con cada tarea)
 - **Carpeta de informes:** `tmp/` (ignorada por git)
 
 ## Entorno
