@@ -18,7 +18,7 @@ Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raí
 - `--pr <n>`: un PR de GitHub (abierto o mergeado). `--ref <sha>`: un commit. Sirven también para calibrar con cambios viejos que después tuvieron un bug conocido.
 - `--pedido`: el pedido o el ticket. Sin él, el contexto sale del brief de la tarea, del PR o de los commits.
 - `--capturas`: capturas de la prueba local, para `superficies`.
-- `--re-revision`: informe anterior. El verificador marca cada hallazgo previo como RESUELTO, NO RESUELTO o YA NO APLICA.
+- `--re-revision`: informe anterior. La re-revisión es incremental (§3b) y el verificador marca cada hallazgo previo como RESUELTO, NO RESUELTO o YA NO APLICA.
 - `--panel`: fuerza la lista de revisores.
 
 ## 1. Diff
@@ -30,10 +30,11 @@ Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raí
 - Si el diff está vacío, termina diciéndolo.
 - **Pisadas:** `git diff --numstat $BASE`. Un archivo ajeno al pedido con muchas líneas borradas (lockfile, `package.json`, `CLAUDE.md`, migraciones existentes) va arriba del informe como C, sin pasar por el verificador. Es el error típico de commitear desde un checkout sucio.
 - **Secretos y datos reales:** archivos `.env*`, llaves, o fixtures con datos de personas reales van arriba como C.
+- **Logs de depuración:** una línea agregada con `[DEBUG-` (`git diff $BASE | grep -n '^+.*\[DEBUG-'`) va arriba como C, sin pasar por el verificador.
 
 ## 2. Contexto compartido (una sola vez)
 
-- El pedido.
+- El pedido, con su bloque de «Decisiones» si viene de una alineación (brief de la tarea o informe de /entrega). Las decisiones tomadas no son hallazgos: un revisor las reporta solo si el código las contradice.
 - Las reglas del proyecto: `CLAUDE.md`, la sección «Reglas del proyecto» del perfil, y las páginas de docs, specs o ADR del área que el perfil indique para cada tipo.
 - No pegues el diff en los prompts: cada revisor lo lee con git.
 
@@ -46,9 +47,9 @@ Sin perfil, este ruteo por defecto:
 | Tipo | Rutas típicas | Revisores |
 |---|---|---|
 | ui | `*.tsx`, `*.vue`, `*.svelte`, `app/`, `pages/`, `components/`, `messages/`, `locales/` | `superficies`, `correctitud` |
-| backend | `api/`, `server/`, `src/` (sin UI), `lib/`, `packages/` | `correctitud`, `sistemas`, `seguridad`, `datos`, `costos` |
+| backend | `api/`, `server/`, `src/` (sin UI), `lib/`, `packages/` | `correctitud`, `sistemas`, `seguridad`, `datos` |
 | datos | `migrations/`, `schema.*`, `prisma/`, `drizzle/`, `db/` | `datos`, `seguridad`, `correctitud` |
-| infra | `.github/`, `infra/`, `terraform/`, `Dockerfile*`, `*.yml` de despliegue, `scripts/*.sh` | `infra`, `seguridad`, `costos` |
+| infra | `.github/`, `infra/`, `terraform/`, `Dockerfile*`, `*.yml` de despliegue, `scripts/*.sh` | `infra`, `seguridad` |
 | docs | `docs/`, `*.md` | `superficies` |
 | generado | lockfiles, código generado, `dist/`, `coverage/` | no cuentan |
 
@@ -57,9 +58,23 @@ Reglas que valen siempre (además de las del perfil):
 - **Unión sin duplicados:** cada revisor entra una vez y recibe todos sus archivos.
 - `seguridad` se suma en cualquier tipo si el diff contiene `auth`, `session`, `token`, `password`, `permission`, `role`, `redirect`, `cookie`, `cors`, `webhook`, `secret`, `dangerouslySetInnerHTML`, `eval` o consultas armadas con strings.
 - `superficies` se suma si cambia algo que ve una persona: textos, correos, notificaciones, mensajes de error.
+- `costos` entra solo con señales de gasto, en cualquier tipo: llamadas a APIs pagadas o de IA (`openai`, `anthropic`, `bedrock`, `gemini`, SDKs de terceros que cobran por uso), envíos (correo, SMS, push, WhatsApp), jobs programados o colas (`cron`, `schedule`, `queue`, `job`), recorridos o consultas sobre colecciones completas, almacenamiento o logs nuevos por evento, o infraestructura que cambia tamaño o cantidad de recursos. Sin señales, no entra. En el uso real, `costos` en todo el backend dio 4 W en 22 corridas.
+- `infra` entra solo si el diff toca rutas de infra (tabla) o variables de entorno y configuración de despliegue.
 - **Diff chico** (≤ 30 líneas, ≤ 2 archivos, sin migración ni infra): `correctitud` y el especialista más pertinente.
 
 Muestra el panel en una línea, con la razón de cada revisor, y sigue sin esperar confirmación.
+
+## 3b. Re-revisión incremental
+
+Con `--re-revision`, no repitas el panel completo:
+
+1. Lee las «Huellas» del informe anterior (§6) y calcula las del diff actual. **Archivos cambiados** = los del diff actual cuya huella es distinta o que no estaban antes.
+2. **Revisores de esta vuelta** = el ruteo de §3 aplicado solo a los archivos cambiados, más los revisores que dejaron un C o W vigente en el informe anterior. Cada uno recibe como «Tus archivos» solo los archivos cambiados que le tocan; la lista completa del diff va como contexto.
+3. Si no hay archivos cambiados, no lances revisores: el verificador decide con el informe anterior y el código actual.
+4. El verificador corre siempre, con el informe anterior.
+5. Excepción: si los archivos cambiados son más de la mitad del diff, o la vuelta anterior pidió un rediseño, corre el panel completo.
+
+Muestra en una línea qué revisores repiten y por qué.
 
 ## 4. Revisores en paralelo
 
@@ -78,20 +93,25 @@ Diff: BASE=<sha> HEAD=<sha | árbol de trabajo> (si HEAD es un sha: lee con git 
 Tus archivos: <lista>
 Todos los archivos del diff: <lista> (puedes abrirlos si los necesitas)
 Pedido: <resumen, máx. 15 líneas>
+Decisiones: <bloque de la alineación o "no hay">. No las reportes como hallazgo salvo que el código las contradiga.
 Reglas y docs del área: <rutas>
 Complemento del proyecto: <ruta en la carpeta de revisores o "no hay">
 Capturas: <rutas o "no hay">
 Re-revisión: <ruta del informe anterior o "no">
+Otros revisores de este panel: <nombre: foco en pocas palabras, por cada uno>. Lo que sea del foco de otro no lo reportes: lo ve ese revisor.
+Sugerencias (S): máximo 3, las de más valor.
 Sigue tu formato de salida exacto.
 ```
 
 ## 5. Verificación
 
-Con todas las salidas, lanza un solo `Agent` con `subagent_type: "pandilla:verificador"` (usa Opus). Pásale el mismo encabezado, las salidas completas de los revisores y el informe anterior si es re-revisión. No filtres ni reescribas hallazgos antes del verificador: su trabajo es descartar los falsos.
+Con todas las salidas, lanza un solo `Agent` con `subagent_type: "pandilla:verificador"` (usa Opus). Pásale el mismo encabezado, las salidas completas de los revisores y el informe anterior si es re-revisión. No filtres ni reescribas hallazgos antes del verificador: su trabajo es descartar los falsos. El verificador comprueba contra el código solo los C y W; los S pasan sin verificar (solo se unen duplicados), porque no bloquean y verificarlos era la mayor parte de su gasto.
 
 ## 6. Informe
 
-Guarda el resultado en `<checkout>/tmp/panel/<rama-o-pr>-<AAAAMMDD-HHMM>.md` (o la carpeta de informes que diga el perfil; tiene que estar ignorada por git). Al inicio: base, head y panel usado. Al final: revisores, hallazgos brutos frente a confirmados, y descartados.
+Guarda el resultado en `<checkout>/tmp/panel/<rama-o-pr>-<AAAAMMDD-HHMM>.md` (o la carpeta de informes que diga el perfil; tiene que estar ignorada por git). Al inicio: base, head, panel usado y, si es re-revisión, archivos cambiados. Al final: revisores, hallazgos brutos frente a confirmados, y descartados.
+
+Cierra el informe con las **Huellas**, para que la siguiente re-revisión sepa qué cambió: por cada archivo del diff, `<ruta> <hash>`, con `git hash-object <ruta>` si HEAD es el árbol de trabajo o `git rev-parse <HEAD>:<ruta>` si es un sha (un archivo borrado se anota `<ruta> borrado`).
 
 Al usuario: el veredicto, la tabla de hallazgos vigentes y la ruta del informe. No repitas los descartados.
 

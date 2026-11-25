@@ -10,8 +10,9 @@ Plugin de [Claude Code](https://claude.com/claude-code) para poner a varios agen
 
 Cada pedido sigue el mismo flujo:
 
+0. Alineación antes de lanzar: una ronda de preguntas con tu respuesta recomendada para cada decisión abierta. Los hechos los averigua el agente; las decisiones son tuyas.
 1. Su worktree, con puertos propios.
-2. Implementación con un test rojo primero.
+2. Implementación. En un bug, primero un comando que falla con el síntoma exacto (y la prueba de que el rojo no vino del script), 3–5 hipótesis y un test que falla antes del arreglo.
 3. Compuertas: formato, lint, tipos y tests.
 4. `/pandilla:panel`, con hasta 3 vueltas de corrección.
 5. Prueba local rojo/verde.
@@ -96,9 +97,16 @@ Variables de entorno:
 
 ## Por qué así
 
+- **Alinear antes de lanzar.** Una tarea en paralelo no puede preguntarte nada: cada decisión abierta la tomaría a ciegas. Por eso se cierran antes, y el panel no las reporta como hallazgos.
+- **En un bug, primero el rojo.** Sin un comando que falle con el síntoma exacto no hay hipótesis: así no se arregla un bug que no existe. «No se reproduce» es un resultado válido.
+- **Un panel que cuesta lo justo.** Los docs se escriben antes del panel (antes eran la causa de casi todas las segundas vueltas). La re-revisión solo repite los revisores de los archivos que cambiaron. `costos` entra solo con señales de gasto, y el verificador comprueba solo los C y W.
 - **Un verificador adversarial** que descarta lo que no puede reproducir leyendo el código. Sin él, el ruido de los revisores tapa los hallazgos reales.
 - **Regresión obligatoria con evidencia** antes de decir «listo para merge»: mapa de quienes consumen lo que cambió, tests en la base frente a la rama, y cada flujo crítico probado de punta a punta.
 - **Revisión independiente en una sesión limpia**: quien implementó no se revisa a sí mismo.
+
+## Créditos
+
+La alineación y el comando rojo adaptan las skills `grilling` y `diagnosing-bugs` de Matt Pocock ([mattpocock/skills](https://github.com/mattpocock/skills), MIT).
 
 ## Licencia
 
