@@ -10,8 +10,9 @@ Plugin de [Claude Code](https://claude.com/claude-code) para poner a varios agen
 
 Cada pedido sigue el mismo flujo:
 
+0. Alineación antes de lanzar: una ronda de preguntas con tu respuesta recomendada para cada decisión abierta. Los hechos los averigua el agente; las decisiones son tuyas.
 1. Su worktree, con puertos propios.
-2. Implementación con un test rojo primero.
+2. Implementación. En un bug, primero un comando que falla con el síntoma exacto (y la prueba de que el rojo no vino del script), 3–5 hipótesis y un test que falla antes del arreglo.
 3. Compuertas: formato, lint, tipos y tests.
 4. `/pandilla:panel`, con hasta 3 vueltas de corrección.
 5. Prueba local rojo/verde.
@@ -31,7 +32,8 @@ Nunca mergea. Nunca toca producción.
 | `/pandilla:iniciar` | Lee tu repo, te hace 3 o 4 preguntas y escribe el perfil `.claude/pandilla.md` |
 | `/pandilla:limpiar` | Borra los worktrees que ya cumplieron (PR mergeado o cerrado, sin cambios ni commits propios, sin procesos adentro) y reporta el resto. Se puede programar para que corra sola dos veces al día |
 | `/pandilla:tablero` | Tablero local en http://localhost:7788: un pizarrón con el lote y sus pedidos, 4 habitaciones (una por tarea activa, con el paso del flujo en que va: investigando, desarrollando, verificando, panel, probando, regresión, entregando; qué hace ahora y quiénes están adentro) y 2 sillas de espera para la cola |
-| Revisores | `correctitud`, `sistemas`, `seguridad`, `datos`, `superficies`, `infra`, `costos` y el `verificador` |
+| Revisores | `correctitud`, `sistemas`, `seguridad`, `datos`, `superficies`, `infra`, `costos`, `diseno` y el `verificador` |
+| Complementos | Skills y agentes de terceros que pandilla usa si los tienes instalados: diseño de Emil Kowalski, y Product Manager, Reality Checker, Evidence Collector, API Tester y Accessibility Auditor de agency-agents. `/pandilla:iniciar --complementos` te dice cuáles faltan y los instala si quieres |
 | `scripts/` | `entorno.sh` (puertos propios por worktree, instalación, permisos negados), `wt` (corre un comando con ese entorno) y `fila.sh` (fila para recursos que solo admiten uno a la vez) |
 
 ## Instalar
@@ -96,9 +98,20 @@ Variables de entorno:
 
 ## Por qué así
 
+- **Alinear antes de lanzar.** Una tarea en paralelo no puede preguntarte nada: cada decisión abierta la tomaría a ciegas. Por eso se cierran antes, y el panel no las reporta como hallazgos.
+- **En un bug, primero el rojo.** Sin un comando que falle con el síntoma exacto no hay hipótesis: así no se arregla un bug que no existe. «No se reproduce» es un resultado válido.
+- **Un panel que cuesta lo justo.** Los docs se escriben antes del panel (antes eran la causa de casi todas las segundas vueltas). La re-revisión solo repite los revisores de los archivos que cambiaron. `costos` entra solo con señales de gasto, y el verificador comprueba solo los C y W.
+- **Código que no se vuelve basura, sin una arquitectura pesada.** Cuatro preguntas en vez de Clean Code o hexagonal: ¿ya existe?, ¿si lo borro se pierde algo?, ¿hay un segundo uso real?, ¿la regla cambia en un solo lugar? Cada tarea escribe un mapa de reutilización antes de implementar, `duplicados.sh` detecta código copiado, `/simplify` hace una pasada y el revisor `diseno` lo cuida en el panel.
+- **Sesiones que no se degradan.** Con más de ~300k tokens de contexto el modelo empieza a olvidar lo del principio. pandilla avisa al cruzar ese umbral (y cada 50k más) para compactar o traspasar, cada tarea deja su estado en el informe paso a paso para retomar sin memoria, y el orquestador corre un lote por sesión. Recomendado además: `"autoCompactWindow": 400000` en tu `~/.claude/settings.json`. El umbral del aviso se cambia con `PANDILLA_AVISO_CONTEXTO`.
+- **Tareas visibles en T3.** Con `Motor T3: hilos` en el perfil, cada tarea del lote es un hilo de primer nivel con su worktree, para abrirlo y conversar con él.
+- **Complementos, no copias.** pandilla nombra las skills y agentes de terceros que le sirven y los usa si están instalados; no los vendoriza.
 - **Un verificador adversarial** que descarta lo que no puede reproducir leyendo el código. Sin él, el ruido de los revisores tapa los hallazgos reales.
 - **Regresión obligatoria con evidencia** antes de decir «listo para merge»: mapa de quienes consumen lo que cambió, tests en la base frente a la rama, y cada flujo crítico probado de punta a punta.
 - **Revisión independiente en una sesión limpia**: quien implementó no se revisa a sí mismo.
+
+## Créditos
+
+La alineación, el comando rojo y el diseño simple adaptan las skills `grilling`, `diagnosing-bugs`, `codebase-design` y `code-review` de Matt Pocock ([mattpocock/skills](https://github.com/mattpocock/skills), MIT).
 
 ## Licencia
 

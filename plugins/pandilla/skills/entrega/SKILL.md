@@ -1,7 +1,7 @@
 ---
 name: entrega
 description: >-
-  Ciclo completo para llevar un cambio hasta «listo para merge» en el checkout y la rama actuales: compuertas, /panel con re-revisión, prueba local completa rojo/verde (todo el flujo arriba, sin atajos, navegador si lo ve una persona), regresión de flujos críticos, un commit, un PR (o commit local según el perfil), revisión independiente en sesión limpia, correcciones y resumen final. Usar con "/entrega", "llévalo a PR", "déjalo listo para merge", o al terminar de implementar algo. Invocarla autoriza el commit y, si el perfil publica PRs, el push y el PR de ESTA tarea; nunca el merge.
+  Ciclo completo para llevar un cambio hasta «listo para merge» en el checkout y la rama actuales: alineación con el usuario, en bugs un comando rojo con el síntoma exacto, compuertas, /panel con re-revisión, prueba local completa rojo/verde (todo el flujo arriba, sin atajos, navegador si lo ve una persona), regresión de flujos críticos, un commit, un PR (o commit local según el perfil), revisión independiente en sesión limpia, correcciones y resumen final. Usar con "/entrega", "llévalo a PR", "déjalo listo para merge", o al terminar de implementar algo. Invocarla autoriza el commit y, si el perfil publica PRs, el push y el PR de ESTA tarea; nunca el merge.
 ---
 
 # /entrega
@@ -12,19 +12,31 @@ Lee primero el perfil del proyecto. **Dónde está el perfil.** En orden: `<raí
 
 Argumentos: `--pedido "<texto>"` (o un ticket), `--base <rama>`, `--sin-regresion` (solo cambios sin lógica: docs, textos; dilo en el resumen), `--pr <n>` (retoma con el PR ya abierto, desde el paso 6).
 
-Lleva una lista de pasos visible y actualízala en cada paso.
+Lleva una lista de pasos visible y actualízala en cada paso. Escribe además una línea por paso cerrado en `<carpeta de informes>/entrega/<rama>/estado.md` (paso · resultado · evidencia · siguiente): si la sesión se compacta o pasa a otra, se retoma desde ahí.
+
+**Complementos:** al empezar, corre `<plugin>/scripts/complementos.sh` y aplica `<plugin>/referencias/complementos.md` en cada paso con los instalados (y sin los que el perfil apague). Los que falten no bloquean: dilo una vez en el resumen y propone `/pandilla:iniciar --complementos`.
 
 ## 0. Antes de empezar
 
 - La rama no puede ser la base ni una rama de release. Si lo es, crea una según el perfil.
 - `git status` y `git log <base>..HEAD --oneline`: el diff tiene que ser solo de esta tarea. Si ves cambios ajenos, para y pregunta. Si el checkout principal está sucio con trabajo ajeno, trabaja en un worktree (`git worktree add ../<repo>-<slug> -b <rama> <base>`), prepáralo con «Entorno» del perfil y avísalo.
 - Lee el pedido, `CLAUDE.md` y los docs del área.
+- **Alinear (obligatorio):** sigue `<plugin>/referencias/alinear.md` (`<plugin>` es la carpeta dos niveles arriba de esta skill). Si el cambio ya está implementado, la ronda incluye las decisiones que el diff tomó sin que nadie las pidiera: confírmalas con el usuario. Guarda el bloque de «Decisiones» en la carpeta de informes y pásalo al panel con el pedido.
+- **Tipo `bug`:** sigue `<plugin>/referencias/bug-rojo.md` antes de arreglar. Si el arreglo ya está hecho, construye el comando rojo igual y córrelo en la base, en un worktree temporal (§Regresión 3): tiene que salir rojo ahí con el síntoma exacto y verde en la rama. Si no se reproduce en la base, para y díselo al usuario con la evidencia: el arreglo puede estar apuntando a otro problema.
 
 ## 1. Compuertas
 
 Las del perfil («Compuertas»), en su orden, con `wt` si estás en un worktree. Las lentas (integración, e2e) pueden esperar al paso 3. Las fallas conocidas del perfil se nombran, no se esconden; ante la duda, córrelas en la base (§Regresión 3).
 
+## 1b. Diseño simple
+
+- `<plugin>/scripts/duplicados.sh <base>`: cada duplicado de código nuevo se reutiliza o se justifica.
+- El «Mapa de reutilización» de `<plugin>/referencias/diseno-simple.md` en la carpeta de informes, hecho desde el diff: qué existente se reutiliza y por qué cada pieza nueva no podía usar lo que había. Si encuentras algo existente que servía, cámbialo ahora.
+- `/simplify` sobre el diff: aplica lo que simplifique sin cambiar el comportamiento y repite el paso 1.
+
 ## 2. /panel
+
+Antes de correrlo, si el cambio altera algo visible o una regla, los docs del área ya tienen que estar actualizados: el panel los revisa en la primera vuelta y no gasta una vuelta en pedirlos.
 
 Corre `/pandilla:panel`. Corrige los C y W confirmados o plausibles; los S a tu criterio (anota cuáles dejaste). Repite el paso 1 y corre `--re-revision <informe>`. Máximo 3 vueltas; si en la tercera siguen los C o W, para y pregunta.
 
@@ -58,8 +70,8 @@ Informe (`<carpeta de informes>/regresion/<rama>.md`): tabla de consumidores, ta
 Solo con el panel APROBADO, los pasos 3 y 4 en verde y la tabla de cobertura completa (todos los pasos `real`):
 
 - `git diff --numstat <base>` (pisadas) y que no entre ningún secreto ni dato real.
-- Un solo commit con el formato del perfil. Si cambió algo visible o una regla, actualiza los docs del área en el mismo commit.
-- **Publicación: pr** → push y PR con la herramienta del perfil (skill del repo o `gh pr create`), en un solo push. Cuerpo: veredicto del panel y S que quedaron, evidencia rojo/verde con la tabla de cobertura, y tabla de regresión.
+- Un solo commit con el formato del perfil, con el código y los docs revisados por el panel.
+- **Publicación: pr** → push y PR con la herramienta del perfil (skill del repo o `gh pr create`), en un solo push. Cuerpo: decisiones de la alineación, veredicto del panel y S que quedaron, evidencia rojo/verde con la tabla de cobertura, y tabla de regresión. En un `bug`, también el comando rojo, la causa confirmada y las hipótesis descartadas.
 - **Publicación: local** → sin push. El mismo contenido va en `<carpeta de informes>/entrega/<rama>/informe.md`.
 
 ## 6. Revisión independiente en una sesión limpia

@@ -12,6 +12,7 @@ Lo leen `/pandilla:lote`, `/pandilla:panel` y `/pandilla:entrega`. Es del dueño
 - **Revisión independiente:** skill `/review-pr` del repo | `/code-review high`
 - **Pedidos:** texto | tickets de <Linear | GitHub Issues | Jira>
 - **Máximo de tareas activas:** 4
+- **Motor T3:** `delegado` (hilos hijos del orquestador) | `hilos` (hilos de primer nivel en la barra lateral de T3, para conversar con cada tarea)
 - **Carpeta de informes:** `tmp/` (ignorada por git)
 
 ## Entorno
@@ -83,3 +84,9 @@ Además de producción, publicar y secretos: <carpetas o archivos>
 ## Reglas del proyecto
 
 Las que no están en `CLAUDE.md` y los agentes tienen que seguir: <lista>
+
+## Complementos
+
+<!-- Skills y agentes de terceros que pandilla usa si están instalados (referencias/complementos.md del plugin). -->
+Apagados: <ninguno, o nombres separados por coma>
+Reglas propias: <por ejemplo «mobile-native siempre que se toque apps/web»; o ninguna>
